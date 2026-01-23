@@ -1,10 +1,19 @@
 import { CheckCircle2 } from "lucide-react";
 
 const benefits = [
-  "Personal feedback that videos can't provide",
+  "Personal feedback that videos and courses can't provide",
   "AI preparation before every mentor session",
-  "Expert mentors who've done what you want to do",
-  "Structured learning path tailored to your goals",
+  "Expert mentors across any skill you want to learn",
+  "Track your progress and see real improvement",
+];
+
+const categories = [
+  { emoji: "💻", name: "Coding" },
+  { emoji: "📚", name: "School" },
+  { emoji: "🎨", name: "Creative" },
+  { emoji: "💼", name: "Professional" },
+  { emoji: "🎬", name: "Video" },
+  { emoji: "✍️", name: "Writing" },
 ];
 
 export function ValueProp() {
@@ -38,6 +47,20 @@ export function ValueProp() {
           <div className="relative">
             <div className="absolute inset-0 bg-primary/5 rounded-3xl blur-2xl" />
             <div className="relative bg-card border border-border rounded-3xl p-8 overflow-hidden">
+              {/* Categories */}
+              <p className="text-sm text-muted-foreground mb-4">Learn anything:</p>
+              <div className="flex flex-wrap gap-2 mb-6">
+                {categories.map((cat) => (
+                  <div 
+                    key={cat.name}
+                    className="flex items-center gap-2 px-3 py-2 bg-secondary rounded-lg text-sm"
+                  >
+                    <span>{cat.emoji}</span>
+                    <span>{cat.name}</span>
+                  </div>
+                ))}
+              </div>
+
               {/* AI Card */}
               <div className="bg-secondary/50 rounded-2xl p-6 mb-4 border border-border">
                 <div className="flex items-center gap-3 mb-4">
@@ -50,7 +73,7 @@ export function ValueProp() {
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground italic">
-                  "Let me explain color grading fundamentals before your session with Alex..."
+                  "Let me explain the fundamentals before your mentor session..."
                 </p>
               </div>
 
@@ -61,12 +84,12 @@ export function ValueProp() {
                     <span className="text-primary-foreground font-bold text-sm">👤</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-sm">Alex Rivera</p>
-                    <p className="text-xs text-muted-foreground">Video Editor • 8 years exp.</p>
+                    <p className="font-semibold text-sm">Your Mentor</p>
+                    <p className="text-xs text-muted-foreground">Expert in your field</p>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground italic">
-                  "Your cut timing is solid, but try adding J-cuts here for better flow..."
+                  "Great progress! Here's how to take it to the next level..."
                 </p>
               </div>
 

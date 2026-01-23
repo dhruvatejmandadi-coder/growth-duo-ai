@@ -10,13 +10,13 @@ const steps = [
   {
     icon: Calendar,
     title: "Book a Mentor",
-    description: "Choose an expert mentor in your field. Book a 30 or 60-minute session that fits your schedule.",
+    description: "Choose an expert mentor in your field. Book a session that fits your schedule for personalized guidance.",
     color: "primary",
   },
   {
     icon: Rocket,
     title: "Level Up",
-    description: "Get personalized feedback from your mentor. Apply insights and track your progress.",
+    description: "Get personalized feedback from your mentor. Apply insights and track your progress over time.",
     color: "accent",
   },
 ];

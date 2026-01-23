@@ -16,7 +16,7 @@ export function Hero() {
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-border mb-8 animate-fade-in">
             <Sparkles className="w-4 h-4 text-primary" />
             <span className="text-sm text-muted-foreground">
-              Starting with Video Editing mentors
+              Learn anything with AI + human mentors
             </span>
           </div>
 
@@ -31,15 +31,15 @@ export function Hero() {
 
           {/* Subheadline */}
           <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            Get personalized guidance from human experts while an AI tutor helps you 
-            prepare and practice. The perfect combination for accelerated learning.
+            Whether it's coding, school subjects, creative skills, or professional growth — 
+            get personalized guidance from human experts while AI helps you prepare and practice.
           </p>
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
             <Button variant="hero" size="xl" asChild>
-              <Link to="/mentors">
-                Find a Mentor
+              <Link to="/ai-tutor">
+                Try AI Tutor Free
                 <ArrowRight className="w-5 h-5" />
               </Link>
             </Button>
@@ -58,7 +58,7 @@ export function Hero() {
             </div>
             <div className="flex items-center gap-2">
               <Play className="w-5 h-5 text-accent" />
-              <span className="text-sm">Focus: Video Editing</span>
+              <span className="text-sm">Coding, School, Creative & More</span>
             </div>
           </div>
         </div>

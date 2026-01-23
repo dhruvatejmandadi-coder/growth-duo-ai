@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Menu, X } from "lucide-react";
+import { Sparkles, Menu, X, User } from "lucide-react";
 import { useState } from "react";
 
 export function Header() {
@@ -35,10 +35,10 @@ export function Header() {
               AI Tutor
             </Link>
             <Link 
-              to="/how-it-works" 
+              to="/profile" 
               className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"
             >
-              How it Works
+              Profile
             </Link>
           </nav>
 
@@ -80,11 +80,11 @@ export function Header() {
                 AI Tutor
               </Link>
               <Link 
-                to="/how-it-works" 
+                to="/profile" 
                 className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                How it Works
+                Profile
               </Link>
               <div className="flex gap-3 pt-4 border-t border-border">
                 <Button variant="ghost" size="sm" asChild className="flex-1">
