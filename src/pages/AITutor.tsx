@@ -1,9 +1,9 @@
 import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bot, Send, User, Sparkles, Info } from "lucide-react";
+import { Bot, Send, User, Sparkles, Info, Zap } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { Link } from "react-router-dom";
 
 type Message = {
   id: string;
@@ -11,11 +11,13 @@ type Message = {
   content: string;
 };
 
+const MAX_FREE_MESSAGES = 10;
+
 const suggestedQuestions = [
-  "What's the best software for video editing?",
-  "How do I improve my pacing in edits?",
-  "Explain color grading basics",
-  "Tips for smooth transitions",
+  "Explain recursion in programming",
+  "How do I solve quadratic equations?",
+  "Tips for improving my writing",
+  "What makes a good portfolio?",
 ];
 
 export default function AITutor() {
@@ -23,12 +25,15 @@ export default function AITutor() {
     {
       id: "welcome",
       role: "assistant",
-      content: "Hey! I'm your AI tutor. I can help you learn video editing concepts, prepare for mentor sessions, or answer any questions. What would you like to learn about?",
+      content: "Hey! I'm your AI tutor. I can help you learn about coding, school subjects, creative skills, professional development, and much more. What would you like to explore today?",
     },
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [messageCount, setMessageCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const remainingMessages = MAX_FREE_MESSAGES - messageCount;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -40,6 +45,10 @@ export default function AITutor() {
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
+    
+    if (remainingMessages <= 0) {
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -50,6 +59,7 @@ export default function AITutor() {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
+    setMessageCount((prev) => prev + 1);
 
     // Simulate AI response (will be replaced with real AI later)
     setTimeout(() => {
@@ -66,20 +76,20 @@ export default function AITutor() {
   const getSimulatedResponse = (question: string): string => {
     const q = question.toLowerCase();
     
-    if (q.includes("software") || q.includes("best")) {
-      return "For beginners, I'd recommend starting with DaVinci Resolve (free and powerful) or Adobe Premiere Pro (industry standard). Both have great communities and tutorials. Would you like me to explain the pros and cons of each?";
+    if (q.includes("recursion") || q.includes("programming") || q.includes("code")) {
+      return "Great question! **Recursion** is when a function calls itself to solve a problem by breaking it into smaller pieces.\n\nHere's a simple example:\n```\nfunction countdown(n) {\n  if (n <= 0) return; // Base case\n  console.log(n);\n  countdown(n - 1); // Recursive call\n}\n```\n\nKey parts:\n1. **Base case** - When to stop\n2. **Recursive case** - The function calling itself\n\nWant me to explain with more examples?";
     }
-    if (q.includes("pacing") || q.includes("rhythm")) {
-      return "Great question! Pacing is all about matching your edits to the energy of your content. Key tips:\n\n1. **Cut on action** - Make cuts during movement\n2. **Match audio beats** - Sync cuts to music or dialogue\n3. **Vary shot length** - Mix quick cuts with longer holds\n\nWant me to elaborate on any of these?";
+    if (q.includes("quadratic") || q.includes("equation") || q.includes("math")) {
+      return "For quadratic equations (ax² + bx + c = 0), you can use the **quadratic formula**:\n\nx = (-b ± √(b² - 4ac)) / 2a\n\n**Steps:**\n1. Identify a, b, and c from your equation\n2. Calculate the discriminant: b² - 4ac\n3. Plug into the formula\n\n**Example:** x² + 5x + 6 = 0\n- a=1, b=5, c=6\n- Solutions: x = -2 and x = -3\n\nShould I walk through a specific problem?";
     }
-    if (q.includes("color") || q.includes("grading")) {
-      return "Color grading transforms the look of your footage. The basics:\n\n1. **Primary correction** - Fix exposure, white balance\n2. **Secondary correction** - Adjust specific colors/areas\n3. **Creative grading** - Add your artistic style\n\nStart with getting your footage 'neutral' before adding creative looks. Should I explain any step in more detail?";
+    if (q.includes("writing") || q.includes("essay") || q.includes("content")) {
+      return "Here are my top tips for better writing:\n\n1. **Start with an outline** - Know your main points before writing\n2. **Write first, edit later** - Don't perfectionism slow you down\n3. **Use active voice** - \"The dog bit the man\" vs \"The man was bitten\"\n4. **Cut unnecessary words** - Every word should earn its place\n5. **Read it aloud** - You'll catch awkward phrases\n\nWhat type of writing are you working on? I can give more specific advice!";
     }
-    if (q.includes("transition")) {
-      return "Smooth transitions are about motivation. Ask yourself: 'Why am I cutting here?'\n\nBest practices:\n• Use match cuts (similar shapes/movement)\n• J-cuts and L-cuts for natural flow\n• Save wipes/effects for intentional style moments\n\nThe best transition is often a simple cut at the right moment!";
+    if (q.includes("portfolio") || q.includes("career") || q.includes("job")) {
+      return "A strong portfolio should:\n\n**1. Show quality over quantity**\n- 3-5 best projects > 20 mediocre ones\n\n**2. Tell the story**\n- What problem did you solve?\n- What was your process?\n- What were the results?\n\n**3. Be easy to navigate**\n- Clear categories\n- Fast loading\n- Mobile-friendly\n\n**4. Include context**\n- Your role in team projects\n- Tools and skills used\n\nWhat field is your portfolio for?";
     }
     
-    return "That's a great question about video editing! I'd love to help you understand this better. Could you tell me more about what specific aspect you're curious about? Or if you'd like, you can book a session with one of our mentors for personalized guidance on this topic.";
+    return "That's a great question! I'd love to help you explore this topic further.\n\nCould you tell me a bit more about:\n- What you already know about this\n- What specifically you're trying to learn or accomplish\n\nThis will help me give you the most relevant guidance. Or if you'd like more personalized feedback, our mentor marketplace is coming soon!";
   };
 
   const handleSuggestion = (question: string) => {
@@ -102,6 +112,14 @@ export default function AITutor() {
                 <p className="text-sm text-muted-foreground">Your 24/7 learning companion</p>
               </div>
             </div>
+            
+            {/* Credits Display */}
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${
+              remainingMessages <= 3 ? "bg-destructive/10 text-destructive" : "bg-secondary"
+            }`}>
+              <Zap className="w-4 h-4" />
+              <span className="text-sm font-medium">{remainingMessages} messages left</span>
+            </div>
           </div>
 
           {/* Info Banner */}
@@ -110,7 +128,7 @@ export default function AITutor() {
             <p className="text-sm text-muted-foreground">
               <span className="text-accent font-medium">AI helps you learn.</span>{" "}
               <span className="text-primary font-medium">Mentors help you improve.</span>{" "}
-              Use me to understand concepts and prepare, then book a mentor for personalized feedback on your work.
+              Use me to understand concepts, then book a mentor for personalized feedback on your work.
             </p>
           </div>
 
@@ -183,6 +201,21 @@ export default function AITutor() {
               </div>
             )}
 
+            {/* Limit Reached Banner */}
+            {remainingMessages <= 0 && (
+              <div className="p-4 bg-destructive/10 border-t border-destructive/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-destructive">Free messages used up</p>
+                    <p className="text-sm text-muted-foreground">Sign up to continue learning</p>
+                  </div>
+                  <Button variant="hero" size="sm" asChild>
+                    <Link to="/signup">Get More</Link>
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Input */}
             <div className="p-4 border-t border-border">
               <div className="flex gap-3">
@@ -190,15 +223,15 @@ export default function AITutor() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                  placeholder="Ask anything about video editing..."
+                  placeholder={remainingMessages > 0 ? "Ask anything..." : "Sign up to continue..."}
                   className="flex-1"
-                  disabled={isLoading}
+                  disabled={isLoading || remainingMessages <= 0}
                 />
                 <Button 
                   variant="hero" 
                   size="icon"
                   onClick={handleSend}
-                  disabled={!input.trim() || isLoading}
+                  disabled={!input.trim() || isLoading || remainingMessages <= 0}
                 >
                   <Send className="w-4 h-4" />
                 </Button>
