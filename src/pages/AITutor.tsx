@@ -1,15 +1,10 @@
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bot, Send, User, Sparkles, Info, Zap } from "lucide-react";
+import { Bot, Send, User, Info, Zap } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-
-type Message = {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-};
+import { useAITutor } from "@/hooks/useAITutor";
 
 const MAX_FREE_MESSAGES = 10;
 
@@ -21,15 +16,8 @@ const suggestedQuestions = [
 ];
 
 export default function AITutor() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content: "Hey! I'm your AI tutor. I can help you learn about coding, school subjects, creative skills, professional development, and much more. What would you like to explore today?",
-    },
-  ]);
+  const { messages, isLoading, sendMessage } = useAITutor();
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [messageCount, setMessageCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -50,46 +38,10 @@ export default function AITutor() {
       return;
     }
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: input.trim(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
+    const messageToSend = input.trim();
     setInput("");
-    setIsLoading(true);
     setMessageCount((prev) => prev + 1);
-
-    // Simulate AI response (will be replaced with real AI later)
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: getSimulatedResponse(userMessage.content),
-      };
-      setMessages((prev) => [...prev, aiResponse]);
-      setIsLoading(false);
-    }, 1000);
-  };
-
-  const getSimulatedResponse = (question: string): string => {
-    const q = question.toLowerCase();
-    
-    if (q.includes("recursion") || q.includes("programming") || q.includes("code")) {
-      return "Great question! **Recursion** is when a function calls itself to solve a problem by breaking it into smaller pieces.\n\nHere's a simple example:\n```\nfunction countdown(n) {\n  if (n <= 0) return; // Base case\n  console.log(n);\n  countdown(n - 1); // Recursive call\n}\n```\n\nKey parts:\n1. **Base case** - When to stop\n2. **Recursive case** - The function calling itself\n\nWant me to explain with more examples?";
-    }
-    if (q.includes("quadratic") || q.includes("equation") || q.includes("math")) {
-      return "For quadratic equations (ax² + bx + c = 0), you can use the **quadratic formula**:\n\nx = (-b ± √(b² - 4ac)) / 2a\n\n**Steps:**\n1. Identify a, b, and c from your equation\n2. Calculate the discriminant: b² - 4ac\n3. Plug into the formula\n\n**Example:** x² + 5x + 6 = 0\n- a=1, b=5, c=6\n- Solutions: x = -2 and x = -3\n\nShould I walk through a specific problem?";
-    }
-    if (q.includes("writing") || q.includes("essay") || q.includes("content")) {
-      return "Here are my top tips for better writing:\n\n1. **Start with an outline** - Know your main points before writing\n2. **Write first, edit later** - Don't perfectionism slow you down\n3. **Use active voice** - \"The dog bit the man\" vs \"The man was bitten\"\n4. **Cut unnecessary words** - Every word should earn its place\n5. **Read it aloud** - You'll catch awkward phrases\n\nWhat type of writing are you working on? I can give more specific advice!";
-    }
-    if (q.includes("portfolio") || q.includes("career") || q.includes("job")) {
-      return "A strong portfolio should:\n\n**1. Show quality over quantity**\n- 3-5 best projects > 20 mediocre ones\n\n**2. Tell the story**\n- What problem did you solve?\n- What was your process?\n- What were the results?\n\n**3. Be easy to navigate**\n- Clear categories\n- Fast loading\n- Mobile-friendly\n\n**4. Include context**\n- Your role in team projects\n- Tools and skills used\n\nWhat field is your portfolio for?";
-    }
-    
-    return "That's a great question! I'd love to help you explore this topic further.\n\nCould you tell me a bit more about:\n- What you already know about this\n- What specifically you're trying to learn or accomplish\n\nThis will help me give you the most relevant guidance. Or if you'd like more personalized feedback, our mentor marketplace is coming soon!";
+    await sendMessage(messageToSend);
   };
 
   const handleSuggestion = (question: string) => {
