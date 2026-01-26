@@ -1,10 +1,33 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Users, Bell, ArrowRight, Code, GraduationCap, Briefcase, Palette, Video, PenTool } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { 
+  Users, 
+  Bell, 
+  ArrowRight, 
+  Code, 
+  GraduationCap, 
+  Briefcase, 
+  Palette, 
+  Video, 
+  PenTool,
+  Search,
+  SlidersHorizontal,
+  Star,
+  Clock,
+  DollarSign
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const categories = [
   { icon: Code, name: "Coding", description: "Web dev, mobile apps, data science" },
@@ -18,6 +41,9 @@ const categories = [
 export default function Mentors() {
   const [email, setEmail] = useState("");
   const [notified, setNotified] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [sortBy, setSortBy] = useState<string>("");
   const { toast } = useToast();
 
   const handleNotify = (e: React.FormEvent) => {
@@ -41,7 +67,7 @@ export default function Mentors() {
     <DashboardLayout>
       <div className="p-6">
         {/* Header */}
-        <div className="max-w-3xl mx-auto text-center mb-12">
+        <div className="max-w-3xl mx-auto text-center mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-border mb-6">
             <Users className="w-4 h-4 text-primary" />
             <span className="text-sm text-muted-foreground">Coming Soon</span>
@@ -77,6 +103,81 @@ export default function Mentors() {
             </div>
           )}
         </div>
+
+        {/* Enhanced Search Section */}
+        <Card className="max-w-4xl mx-auto mb-8 bg-card border-border">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <SlidersHorizontal className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium">Search & Filter (Preview)</span>
+            </div>
+            
+            <div className="grid sm:grid-cols-4 gap-3">
+              {/* Search Input */}
+              <div className="sm:col-span-2 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search mentors by name or skill..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+
+              {/* Category Filter */}
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.name} value={cat.name.toLowerCase()}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Sort By */}
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="rating">
+                    <div className="flex items-center gap-2">
+                      <Star className="w-3 h-3" />
+                      Top Rated
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="price-low">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-3 h-3" />
+                      Price: Low to High
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="price-high">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-3 h-3" />
+                      Price: High to Low
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="availability">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-3 h-3" />
+                      Availability
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <p className="text-xs text-muted-foreground mt-3 text-center">
+              Search functionality will be enabled when mentors are available
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Categories Preview */}
         <div className="max-w-4xl mx-auto">
