@@ -2,9 +2,9 @@ import {
   LayoutDashboard, 
   Bot, 
   Users,
-  Settings,
   TrendingUp,
-  LogOut
+  LogOut,
+  User
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -30,6 +30,7 @@ const mainItems = [
 
 const learnItems = [
   { title: "Progress", url: "/progress", icon: TrendingUp },
+  { title: "Profile", url: "/profile", icon: User },
 ];
 
 export function AppSidebar() {
