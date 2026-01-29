@@ -44,6 +44,75 @@ export type Database = {
         }
         Relationships: []
       }
+      user_surveys: {
+        Row: {
+          challenges: string[] | null
+          challenges_other: string | null
+          created_at: string
+          goals: string[] | null
+          goals_other: string | null
+          help_other: string | null
+          help_types: string[] | null
+          id: string
+          learning_other: string | null
+          learning_styles: string[] | null
+          mentor_other: string | null
+          mentor_personality: string[] | null
+          skill_level: string | null
+          subject_area: string | null
+          subject_other: string | null
+          success_definition: string | null
+          time_commitment: string | null
+          updated_at: string
+          urgency: string | null
+          user_id: string | null
+        }
+        Insert: {
+          challenges?: string[] | null
+          challenges_other?: string | null
+          created_at?: string
+          goals?: string[] | null
+          goals_other?: string | null
+          help_other?: string | null
+          help_types?: string[] | null
+          id?: string
+          learning_other?: string | null
+          learning_styles?: string[] | null
+          mentor_other?: string | null
+          mentor_personality?: string[] | null
+          skill_level?: string | null
+          subject_area?: string | null
+          subject_other?: string | null
+          success_definition?: string | null
+          time_commitment?: string | null
+          updated_at?: string
+          urgency?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          challenges?: string[] | null
+          challenges_other?: string | null
+          created_at?: string
+          goals?: string[] | null
+          goals_other?: string | null
+          help_other?: string | null
+          help_types?: string[] | null
+          id?: string
+          learning_other?: string | null
+          learning_styles?: string[] | null
+          mentor_other?: string | null
+          mentor_personality?: string[] | null
+          skill_level?: string | null
+          subject_area?: string | null
+          subject_other?: string | null
+          success_definition?: string | null
+          time_commitment?: string | null
+          updated_at?: string
+          urgency?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
