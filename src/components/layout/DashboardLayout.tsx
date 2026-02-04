@@ -10,15 +10,15 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full bg-secondary/30">
         <AppSidebar />
         <div className="flex-1 flex flex-col">
           {/* Top header */}
-          <header className="h-14 border-b border-border flex items-center px-4 gap-4 bg-card/50">
+          <header className="h-14 border-b border-border flex items-center px-4 gap-4 bg-background/95 backdrop-blur-md">
             <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg gradient-primary flex items-center justify-center">
-                <Sparkles className="w-3.5 h-3.5 text-primary-foreground" />
+              <div className="w-8 h-8 rounded-xl gradient-primary flex items-center justify-center shadow-sm">
+                <Sparkles className="w-4 h-4 text-white" />
               </div>
               <span className="font-display font-bold text-lg text-foreground">
                 MentorAI

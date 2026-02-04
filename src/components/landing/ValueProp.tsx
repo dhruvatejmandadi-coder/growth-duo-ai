@@ -20,10 +20,13 @@ export function ValueProp() {
   return (
     <section className="py-24">
       <div className="container px-4 sm:px-6">
-        <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center max-w-6xl mx-auto">
           {/* Content */}
           <div>
-            <h2 className="font-display text-3xl sm:text-4xl font-bold mb-6">
+            <span className="inline-block text-sm font-semibold text-primary uppercase tracking-wider mb-3">
+              The MentorAI Advantage
+            </span>
+            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 text-foreground">
               Why learn with{" "}
               <span className="gradient-text">humans + AI</span>?
             </h2>
@@ -36,7 +39,7 @@ export function ValueProp() {
             <ul className="space-y-4">
               {benefits.map((benefit) => (
                 <li key={benefit} className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
                   <span className="text-foreground">{benefit}</span>
                 </li>
               ))}
@@ -46,14 +49,14 @@ export function ValueProp() {
           {/* Visual */}
           <div className="relative">
             <div className="absolute inset-0 bg-primary/5 rounded-3xl blur-2xl" />
-            <div className="relative bg-card border border-border rounded-3xl p-8 overflow-hidden">
+            <div className="relative bg-card border border-border rounded-3xl p-8 overflow-hidden shadow-lg">
               {/* Categories */}
-              <p className="text-sm text-muted-foreground mb-4">Learn anything:</p>
+              <p className="text-sm font-medium text-foreground mb-4">Learn anything:</p>
               <div className="flex flex-wrap gap-2 mb-6">
                 {categories.map((cat) => (
                   <div 
                     key={cat.name}
-                    className="flex items-center gap-2 px-3 py-2 bg-secondary rounded-lg text-sm"
+                    className="flex items-center gap-2 px-3 py-2 bg-secondary rounded-lg text-sm font-medium hover:bg-secondary/80 transition-colors cursor-default"
                   >
                     <span>{cat.emoji}</span>
                     <span>{cat.name}</span>
@@ -62,13 +65,13 @@ export function ValueProp() {
               </div>
 
               {/* AI Card */}
-              <div className="bg-secondary/50 rounded-2xl p-6 mb-4 border border-border">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl gradient-accent flex items-center justify-center">
-                    <span className="text-accent-foreground font-bold">AI</span>
+              <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-2xl p-5 mb-4 border border-accent/20">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl gradient-accent flex items-center justify-center shadow-md">
+                    <span className="text-white font-bold text-xs">AI</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-sm">AI Tutor</p>
+                    <p className="font-semibold text-sm text-foreground">AI Tutor</p>
                     <p className="text-xs text-muted-foreground">Available 24/7</p>
                   </div>
                 </div>
@@ -78,13 +81,13 @@ export function ValueProp() {
               </div>
 
               {/* Mentor Card */}
-              <div className="bg-secondary/50 rounded-2xl p-6 border border-primary/30">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-                    <span className="text-primary-foreground font-bold text-sm">👤</span>
+              <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-5 border border-primary/20">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-md">
+                    <span className="text-white font-bold text-sm">👤</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-sm">Your Mentor</p>
+                    <p className="font-semibold text-sm text-foreground">Your Mentor</p>
                     <p className="text-xs text-muted-foreground">Expert in your field</p>
                   </div>
                 </div>
