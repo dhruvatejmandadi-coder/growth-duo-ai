@@ -1,42 +1,41 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play, Sparkles, Users } from "lucide-react";
+import { ArrowRight, Sparkles, Users, Star, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-secondary/20" />
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-float" />
-      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-accent/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+    <section className="relative min-h-[90vh] flex items-center justify-center pt-20 overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-secondary/30 via-background to-background" />
+      <div className="absolute top-20 right-1/4 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-20 left-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
       
-      <div className="container relative z-10 px-4 sm:px-6 py-20">
+      <div className="container relative z-10 px-4 sm:px-6 py-16">
         <div className="max-w-4xl mx-auto text-center">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-border mb-8 animate-fade-in">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8 animate-fade-in">
             <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-sm text-muted-foreground">
-              Learn anything with AI + human mentors
+            <span className="text-sm font-medium text-primary">
+              AI-Powered Learning + Expert Mentorship
             </span>
           </div>
 
           {/* Main Headline */}
-          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 animate-fade-in-up">
-            Learn faster with{" "}
+          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 animate-fade-in-up text-foreground">
+            Learn smarter with{" "}
             <span className="gradient-text">AI</span>
             <br />
-            Improve faster with{" "}
-            <span className="text-primary">real mentors</span>
+            Grow faster with{" "}
+            <span className="text-accent">mentors</span>
           </h1>
 
           {/* Subheadline */}
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            Whether it's coding, school subjects, creative skills, or professional growth — 
-            get personalized guidance from human experts while AI helps you prepare and practice.
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-in-up leading-relaxed" style={{ animationDelay: '0.2s' }}>
+            Whether it's coding, creative skills, or professional growth — get personalized guidance from human experts while AI helps you prepare and practice.
           </p>
 
           {/* CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
             <Button variant="hero" size="xl" asChild>
               <Link to="/ai-tutor">
                 Try AI Tutor Free
@@ -50,15 +49,19 @@ export function Hero() {
             </Button>
           </div>
 
-          {/* Social Proof */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-8 text-muted-foreground animate-fade-in" style={{ animationDelay: '0.5s' }}>
+          {/* Trust Indicators */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 text-muted-foreground animate-fade-in" style={{ animationDelay: '0.5s' }}>
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-primary" />
-              <span className="text-sm">500+ creators on waitlist</span>
+              <span className="text-sm font-medium">500+ on waitlist</span>
             </div>
             <div className="flex items-center gap-2">
-              <Play className="w-5 h-5 text-accent" />
-              <span className="text-sm">Coding, School, Creative & More</span>
+              <Star className="w-5 h-5 text-amber-500" />
+              <span className="text-sm font-medium">4.9/5 average rating</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-accent" />
+              <span className="text-sm font-medium">Verified mentors</span>
             </div>
           </div>
         </div>

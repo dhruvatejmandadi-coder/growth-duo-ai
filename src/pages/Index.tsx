@@ -42,9 +42,12 @@ const Index = () => {
         <Hero />
         
         {/* Survey CTA Section */}
-        <section className="py-16 bg-secondary/30">
+        <section className="py-16 bg-secondary/50">
           <div className="container max-w-4xl text-center">
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
+            <span className="inline-block text-sm font-semibold text-accent uppercase tracking-wider mb-3">
+              Personalized Matching
+            </span>
+            <h2 className="font-display text-3xl md:text-4xl font-bold mb-4 text-foreground">
               Find Your Perfect Mentor Match
             </h2>
             <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
