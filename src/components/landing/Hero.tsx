@@ -1,10 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, Users, Star, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
-
 export function Hero() {
-  return (
-    <section className="relative min-h-[90vh] flex items-center justify-center pt-20 overflow-hidden">
+  return <section className="relative min-h-[90vh] flex items-center justify-center pt-20 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-b from-secondary/30 via-background to-background" />
       <div className="absolute top-20 right-1/4 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
@@ -30,12 +28,16 @@ export function Hero() {
           </h1>
 
           {/* Subheadline */}
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-in-up leading-relaxed" style={{ animationDelay: '0.2s' }}>
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-in-up leading-relaxed" style={{
+          animationDelay: '0.2s'
+        }}>
             Whether it's coding, creative skills, or professional growth — get personalized guidance from human experts while AI helps you prepare and practice.
           </p>
 
           {/* CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 animate-fade-in-up" style={{
+          animationDelay: '0.3s'
+        }}>
             <Button variant="hero" size="xl" asChild>
               <Link to="/ai-tutor">
                 Try AI Tutor Free
@@ -50,22 +52,23 @@ export function Hero() {
           </div>
 
           {/* Trust Indicators */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 text-muted-foreground animate-fade-in" style={{ animationDelay: '0.5s' }}>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 text-muted-foreground animate-fade-in" style={{
+          animationDelay: '0.5s'
+        }}>
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-primary" />
-              <span className="text-sm font-medium">500+ on waitlist</span>
+              
             </div>
             <div className="flex items-center gap-2">
               <Star className="w-5 h-5 text-amber-500" />
-              <span className="text-sm font-medium">4.9/5 average rating</span>
+              <span className="text-sm font-medium">​</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-accent" />
-              <span className="text-sm font-medium">Verified mentors</span>
+              <span className="text-sm font-medium">​</span>
             </div>
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 }
