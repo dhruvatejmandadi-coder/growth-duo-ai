@@ -2,14 +2,13 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { Link } from "react-router-dom";
 import { Sparkles } from "lucide-react";
-
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
-
-export function DashboardLayout({ children }: DashboardLayoutProps) {
-  return (
-    <SidebarProvider>
+export function DashboardLayout({
+  children
+}: DashboardLayoutProps) {
+  return <SidebarProvider>
       <div className="min-h-screen flex w-full bg-secondary/30">
         <AppSidebar />
         <div className="flex-1 flex flex-col">
@@ -20,9 +19,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <div className="w-8 h-8 rounded-xl gradient-primary flex items-center justify-center shadow-sm">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
-              <span className="font-display font-bold text-lg text-foreground">
-                MentorAI
-              </span>
+              <span className="font-display font-bold text-lg text-foreground">Repend</span>
             </Link>
           </header>
           
@@ -32,6 +29,5 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </main>
         </div>
       </div>
-    </SidebarProvider>
-  );
+    </SidebarProvider>;
 }
