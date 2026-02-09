@@ -1,18 +1,8 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  TrendingUp, 
-  Flame, 
-  Target,
-  Trophy,
-  Calendar,
-  BookOpen,
-  ClipboardCheck
-} from "lucide-react";
-
+import { TrendingUp, Flame, Target, Trophy, Calendar, BookOpen, ClipboardCheck } from "lucide-react";
 export default function ProgressPage() {
-  return (
-    <DashboardLayout>
+  return <DashboardLayout>
       <div className="p-6 space-y-6">
         {/* Header */}
         <div>
@@ -53,7 +43,7 @@ export default function ProgressPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-muted-foreground">--</p>
-                <p className="text-xs text-muted-foreground">Tests Done</p>
+                <p className="text-xs text-muted-foreground">Points Earned</p>
               </div>
             </CardContent>
           </Card>
@@ -64,7 +54,7 @@ export default function ProgressPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-muted-foreground">--</p>
-                <p className="text-xs text-muted-foreground">Courses Done</p>
+                <p className="text-xs text-muted-foreground">Your Interests</p>
               </div>
             </CardContent>
           </Card>
@@ -123,6 +113,5 @@ export default function ProgressPage() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
-  );
+    </DashboardLayout>;
 }
