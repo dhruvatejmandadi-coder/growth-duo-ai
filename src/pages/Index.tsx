@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Hero } from "@/components/landing/Hero";
@@ -9,29 +8,12 @@ import { CTA } from "@/components/landing/CTA";
 import { Button } from "@/components/ui/button";
 import { ClipboardList } from "lucide-react";
 import { SurveyModal } from "@/components/survey/SurveyModal";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const [surveyOpen, setSurveyOpen] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(false);
-  const navigate = useNavigate();
-  const { toast } = useToast();
 
-  const handleSurveyClick = async () => {
-    setCheckingAuth(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    setCheckingAuth(false);
-
-    if (!user) {
-      toast({
-        title: "Login required",
-        description: "Please log in to take the survey.",
-      });
-      navigate("/login");
-      return;
-    }
-
+  const handleSurveyClick = () => {
+    // Allow anonymous surveys - no login required
     setSurveyOpen(true);
   };
 
@@ -58,11 +40,10 @@ const Index = () => {
               variant="hero" 
               size="lg" 
               onClick={handleSurveyClick}
-              disabled={checkingAuth}
               className="gap-2"
             >
               <ClipboardList className="w-5 h-5" />
-              {checkingAuth ? "Checking..." : "Take the Survey"}
+              Take the Survey
             </Button>
           </div>
         </section>
@@ -73,7 +54,7 @@ const Index = () => {
       </main>
       <Footer />
 
-      <SurveyModal open={surveyOpen} onOpenChange={setSurveyOpen} />
+      <SurveyModal open={surveyOpen} onOpenChange={setSurveyOpen} allowAnonymous={true} />
     </div>
   );
 };

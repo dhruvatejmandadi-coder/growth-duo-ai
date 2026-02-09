@@ -14,24 +14,24 @@ export function Hero() {
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8 animate-fade-in">
             <Sparkles className="w-4 h-4 text-primary" />
             <span className="text-sm font-medium text-primary">
-              AI-Powered Learning + Expert Mentorship
+              Daily Challenges + Community Growth
             </span>
           </div>
 
           {/* Main Headline */}
           <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 animate-fade-in-up text-foreground">
-            Learn smarter with{" "}
-            <span className="gradient-text">AI</span>
+            Take on{" "}
+            <span className="gradient-text">challenges</span>
             <br />
-            Grow faster with{" "}
-            <span className="text-accent">mentors</span>
+            Grow with the{" "}
+            <span className="text-accent">community</span>
           </h1>
 
           {/* Subheadline */}
           <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-in-up leading-relaxed" style={{
           animationDelay: '0.2s'
         }}>
-            Whether it's coding, creative skills, or professional growth — get personalized guidance from human experts while AI helps you prepare and practice.
+            Join daily challenges, share your progress, and connect with others on the same journey. From quick tasks to deep learning — level up together.
           </p>
 
           {/* CTAs */}
@@ -39,14 +39,14 @@ export function Hero() {
           animationDelay: '0.3s'
         }}>
             <Button variant="hero" size="xl" asChild>
-              <Link to="/ai-tutor">
-                Try AI Tutor Free
+              <Link to="/challenges">
+                View Challenges
                 <ArrowRight className="w-5 h-5" />
               </Link>
             </Button>
             <Button variant="heroOutline" size="xl" asChild>
-              <Link to="/waitlist">
-                Join Waitlist
+              <Link to="/signup">
+                Join Now
               </Link>
             </Button>
           </div>
