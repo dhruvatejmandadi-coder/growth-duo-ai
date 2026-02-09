@@ -29,17 +29,17 @@ export function Header() {
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <span className="font-display font-bold text-xl text-foreground">
-              MentorAI
+              Repend
             </span>
           </Link>
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">
             <Link 
-              to="/mentors" 
+              to="/challenges" 
               className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"
             >
-              Find Mentors
+              Challenges
             </Link>
             <Link 
               to="/ai-tutor" 
@@ -79,11 +79,11 @@ export function Header() {
           <div className="md:hidden py-4 border-t border-border animate-fade-in bg-background/95 backdrop-blur-md">
             <nav className="flex flex-col gap-4">
               <Link 
-                to="/mentors" 
+                to="/challenges" 
                 className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium py-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Find Mentors
+                Challenges
               </Link>
               <Link 
                 to="/ai-tutor" 

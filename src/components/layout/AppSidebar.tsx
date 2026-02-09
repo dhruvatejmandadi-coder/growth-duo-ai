@@ -1,11 +1,11 @@
 import { 
   LayoutDashboard, 
   Bot, 
-  Users,
   TrendingUp,
   LogOut,
   User,
-  MessageSquare
+  MessageSquare,
+  Trophy
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -25,8 +25,8 @@ import { useAuth } from "@/hooks/useAuth";
 
 const mainItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Challenges", url: "/challenges", icon: Trophy },
   { title: "AI Tutor", url: "/ai-tutor", icon: Bot },
-  { title: "Mentors", url: "/mentors", icon: Users },
   { title: "Community", url: "/community", icon: MessageSquare },
 ];
 

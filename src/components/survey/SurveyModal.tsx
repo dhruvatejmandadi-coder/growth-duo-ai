@@ -16,10 +16,12 @@ import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { surveyQuestions, SurveyResponses, initialSurveyResponses } from "./SurveyData";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { SignUpPromptModal } from "./SignUpPromptModal";
 
 interface SurveyModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  allowAnonymous?: boolean;
 }
 
 const steps = [
@@ -35,10 +37,11 @@ const steps = [
   "success",
 ] as const;
 
-export function SurveyModal({ open, onOpenChange }: SurveyModalProps) {
+export function SurveyModal({ open, onOpenChange, allowAnonymous = false }: SurveyModalProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [responses, setResponses] = useState<SurveyResponses>(initialSurveyResponses);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSignUpPrompt, setShowSignUpPrompt] = useState(false);
   const { toast } = useToast();
 
   const progress = ((currentStep + 1) / steps.length) * 100;
@@ -101,12 +104,19 @@ export function SurveyModal({ open, onOpenChange }: SurveyModalProps) {
 
       toast({
         title: "Survey completed!",
-        description: "We'll use this to match you with the perfect mentor.",
+        description: "Thanks for sharing your goals with us.",
       });
       
       onOpenChange(false);
       setCurrentStep(0);
       setResponses(initialSurveyResponses);
+      
+      // Show sign-up prompt for anonymous users
+      if (!user && allowAnonymous) {
+        setTimeout(() => {
+          setShowSignUpPrompt(true);
+        }, 500);
+      }
     } catch (error) {
       console.error("Survey submission error:", error);
       toast({
@@ -249,6 +259,8 @@ export function SurveyModal({ open, onOpenChange }: SurveyModalProps) {
           )}
         </div>
       </DialogContent>
+      
+      <SignUpPromptModal open={showSignUpPrompt} onOpenChange={setShowSignUpPrompt} />
     </Dialog>
   );
 }

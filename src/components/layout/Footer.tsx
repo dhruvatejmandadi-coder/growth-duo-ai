@@ -13,11 +13,11 @@ export function Footer() {
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <span className="font-display font-bold text-xl text-white">
-                MentorAI
+                Repend
               </span>
             </Link>
             <p className="text-white/60 text-sm leading-relaxed">
-              Learn faster with AI. Improve faster with real mentors.
+              Take on challenges. Grow with the community.
             </p>
           </div>
 
@@ -25,8 +25,8 @@ export function Footer() {
           <div>
             <h4 className="font-semibold text-white mb-4">Product</h4>
             <nav className="flex flex-col gap-3">
-              <Link to="/mentors" className="text-white/60 hover:text-white transition-colors text-sm">
-                Find Mentors
+              <Link to="/challenges" className="text-white/60 hover:text-white transition-colors text-sm">
+                Challenges
               </Link>
               <Link to="/ai-tutor" className="text-white/60 hover:text-white transition-colors text-sm">
                 AI Tutor
@@ -67,7 +67,7 @@ export function Footer() {
         {/* Bottom */}
         <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-white/40">
-            © 2026 MentorAI. All rights reserved.
+            © 2026 Repend. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
             <a href="#" className="text-sm text-white/40 hover:text-white/60 transition-colors">
