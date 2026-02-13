@@ -18,35 +18,35 @@ export function Hero() {
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8 animate-fade-in">
             <Sparkles className="w-4 h-4 text-primary" />
             <span className="text-sm font-medium text-primary">
-              Daily Challenges + Community Growth
+              AI-Powered Courses + Daily Challenges
             </span>
           </div>
 
           {/* Main Headline */}
           <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 animate-fade-in-up text-foreground">
-            Take on{" "}
-            <span className="gradient-text">challenges</span>
+            Learn anything with{" "}
+            <span className="gradient-text">AI courses</span>
             <br />
-            Grow with the{" "}
-            <span className="text-accent">community</span>
+            and daily{" "}
+            <span className="text-accent">challenges</span>
           </h1>
 
           {/* Subheadline */}
           <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-in-up leading-relaxed" style={{ animationDelay: '0.2s' }}>
-            Join daily challenges, share your progress, and connect with others on the same journey. From quick tasks to deep learning — level up together.
+            Generate personalized courses on any topic, take on daily challenges, and grow with a community of learners — all powered by AI.
           </p>
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
             <Button variant="hero" size="xl" asChild>
-              <Link to="/challenges">
-                View Challenges
+              <Link to="/signup">
+                Get Started Free
                 <ArrowRight className="w-5 h-5" />
               </Link>
             </Button>
             <Button variant="heroOutline" size="xl" asChild>
-              <Link to="/signup">
-                Join Now
+              <Link to="/login">
+                Sign In
               </Link>
             </Button>
           </div>

@@ -25,19 +25,19 @@ export function CTA() {
                 Ready to level up your skills?
               </h2>
               <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">
-                Join a community of creators taking on daily challenges and growing together.
+                Create your free account and start generating AI-powered courses and taking on challenges today.
               </p>
               
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Button size="xl" className="bg-white text-primary hover:bg-white/90 font-semibold shadow-lg" asChild>
-                  <Link to="/challenges">
-                    Browse Challenges
+                  <Link to="/signup">
+                    Sign Up Free
                     <ArrowRight className="w-5 h-5" />
                   </Link>
                 </Button>
                 <Button size="xl" variant="outline" className="border-white/30 text-white hover:bg-white/10" asChild>
-                  <Link to="/ai-tutor">
-                    Try AI Tutor
+                  <Link to="/login">
+                    Sign In
                   </Link>
                 </Button>
               </div>

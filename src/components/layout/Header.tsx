@@ -16,6 +16,11 @@ export function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setMobileMenuOpen(false);
+  };
+
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
       scrolled 
@@ -35,24 +40,24 @@ export function Header() {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">
-            <Link 
-              to="/challenges" 
+            <button 
+              onClick={scrollToTop}
               className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"
             >
               Challenges
-            </Link>
-            <Link 
-              to="/ai-tutor" 
+            </button>
+            <button 
+              onClick={scrollToTop}
               className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"
             >
               AI Tutor
-            </Link>
-            <Link 
-              to="/community" 
+            </button>
+            <button 
+              onClick={scrollToTop}
               className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"
             >
               Community
-            </Link>
+            </button>
           </nav>
 
           {/* Desktop CTA */}
@@ -78,27 +83,24 @@ export function Header() {
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-border animate-fade-in bg-background/95 backdrop-blur-md">
             <nav className="flex flex-col gap-4">
-              <Link 
-                to="/challenges" 
-                className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium py-2"
-                onClick={() => setMobileMenuOpen(false)}
+              <button 
+                onClick={scrollToTop}
+                className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium py-2 text-left"
               >
                 Challenges
-              </Link>
-              <Link 
-                to="/ai-tutor" 
-                className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium py-2"
-                onClick={() => setMobileMenuOpen(false)}
+              </button>
+              <button 
+                onClick={scrollToTop}
+                className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium py-2 text-left"
               >
                 AI Tutor
-              </Link>
-              <Link 
-                to="/community" 
-                className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium py-2"
-                onClick={() => setMobileMenuOpen(false)}
+              </button>
+              <button 
+                onClick={scrollToTop}
+                className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium py-2 text-left"
               >
                 Community
-              </Link>
+              </button>
               <div className="flex gap-3 pt-4 border-t border-border">
                 <Button variant="ghost" size="sm" asChild className="flex-1">
                   <Link to="/login">Log in</Link>
