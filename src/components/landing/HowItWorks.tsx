@@ -1,22 +1,22 @@
-import { Bot, Calendar, Rocket, ArrowRight } from "lucide-react";
+import { Bot, BookOpen, Trophy, ArrowRight } from "lucide-react";
 
 const steps = [
   {
-    icon: Bot,
-    title: "Learn with AI",
-    description: "Start with our AI tutor to understand concepts, ask questions, and prepare for your mentor session.",
+    icon: BookOpen,
+    title: "Generate a Course",
+    description: "Tell the AI what you want to learn. It creates a full course with lessons, quizzes, and interactive labs — instantly.",
     color: "primary",
   },
   {
-    icon: Calendar,
-    title: "Book a Mentor",
-    description: "Choose an expert mentor in your field. Book a session that fits your schedule for personalized guidance.",
+    icon: Bot,
+    title: "Learn with AI",
+    description: "Work through modules at your own pace. Ask the AI tutor questions anytime and get personalized explanations.",
     color: "accent",
   },
   {
-    icon: Rocket,
-    title: "Level Up",
-    description: "Get personalized feedback from your mentor. Apply insights and track your progress over time.",
+    icon: Trophy,
+    title: "Take on Challenges",
+    description: "Complete daily challenges, track your progress, and level up alongside the community.",
     color: "primary",
   },
 ];
@@ -72,13 +72,13 @@ export function HowItWorks() {
           ))}
         </div>
 
-        {/* AI vs Mentor Note */}
+        {/* Note */}
         <div className="mt-16 max-w-2xl mx-auto text-center">
           <div className="inline-flex items-center gap-3 px-6 py-4 rounded-2xl bg-card border border-border shadow-sm">
             <Bot className="w-5 h-5 text-primary" />
             <span className="text-sm text-muted-foreground">
-              <span className="text-primary font-semibold">AI helps you learn.</span>{" "}
-              <span className="text-accent font-semibold">Mentors help you improve.</span>
+              <span className="text-primary font-semibold">AI generates your course.</span>{" "}
+              <span className="text-accent font-semibold">Challenges keep you sharp.</span>
             </span>
           </div>
         </div>

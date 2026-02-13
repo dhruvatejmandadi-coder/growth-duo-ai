@@ -27,14 +27,14 @@ const Index = () => {
         <section className="py-16 bg-secondary/50">
           <div className="container max-w-4xl text-center">
             <span className="inline-block text-sm font-semibold text-accent uppercase tracking-wider mb-3">
-              Personalized Matching
+              Personalize Your Experience
             </span>
             <h2 className="font-display text-3xl md:text-4xl font-bold mb-4 text-foreground">
-              Find Your Perfect Mentor Match
+              Tell Us What You Want to Learn
             </h2>
             <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
               Take a quick survey so we can understand your goals, learning style, and challenges. 
-              We'll use this to match you with the ideal mentor.
+              We'll tailor your course recommendations and challenge suggestions.
             </p>
             <Button 
               variant="hero" 

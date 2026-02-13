@@ -1,9 +1,9 @@
 import { CheckCircle2 } from "lucide-react";
 
 const benefits = [
-  "Personal feedback that videos and courses can't provide",
-  "AI preparation before every mentor session",
-  "Expert mentors across any skill you want to learn",
+  "AI-generated courses tailored to any topic you choose",
+  "Interactive labs: simulations, decisions, and classification tasks",
+  "Daily challenges to keep your skills sharp",
   "Track your progress and see real improvement",
 ];
 
@@ -28,12 +28,11 @@ export function ValueProp() {
             </span>
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 text-foreground">
               Why learn with{" "}
-              <span className="gradient-text">humans + AI</span>?
+              <span className="gradient-text">Repend</span>?
             </h2>
             <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-              Tutorials and courses only get you so far. Real improvement comes from 
-              personalized feedback on <span className="text-foreground font-medium">your</span> work, 
-              from someone who's mastered the craft.
+              Static tutorials only get you so far. Repend creates personalized courses with 
+              interactive labs and quizzes — so you actually <span className="text-foreground font-medium">retain</span> what you learn.
             </p>
             
             <ul className="space-y-4">
@@ -51,7 +50,7 @@ export function ValueProp() {
             <div className="absolute inset-0 bg-primary/5 rounded-3xl blur-2xl" />
             <div className="relative bg-card border border-border rounded-3xl p-8 overflow-hidden shadow-lg">
               {/* Categories */}
-              <p className="text-sm font-medium text-foreground mb-4">Learn anything:</p>
+              <p className="text-sm font-medium text-foreground mb-4">Generate a course on anything:</p>
               <div className="flex flex-wrap gap-2 mb-6">
                 {categories.map((cat) => (
                   <div 
@@ -64,35 +63,35 @@ export function ValueProp() {
                 ))}
               </div>
 
-              {/* AI Card */}
+              {/* AI Course Card */}
               <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-2xl p-5 mb-4 border border-accent/20">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-xl gradient-accent flex items-center justify-center shadow-md">
                     <span className="text-white font-bold text-xs">AI</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-sm text-foreground">AI Tutor</p>
-                    <p className="text-xs text-muted-foreground">Available 24/7</p>
+                    <p className="font-semibold text-sm text-foreground">AI Course Generator</p>
+                    <p className="text-xs text-muted-foreground">Instant personalized courses</p>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground italic">
-                  "Let me explain the fundamentals before your mentor session..."
+                  "Generating your course on React hooks with 5 modules, quizzes, and a simulation lab..."
                 </p>
               </div>
 
-              {/* Mentor Card */}
+              {/* Challenge Card */}
               <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl p-5 border border-primary/20">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-md">
-                    <span className="text-white font-bold text-sm">👤</span>
+                    <span className="text-white font-bold text-sm">🏆</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-sm text-foreground">Your Mentor</p>
-                    <p className="text-xs text-muted-foreground">Expert in your field</p>
+                    <p className="font-semibold text-sm text-foreground">Daily Challenge</p>
+                    <p className="text-xs text-muted-foreground">New every day</p>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground italic">
-                  "Great progress! Here's how to take it to the next level..."
+                  "Today's challenge: Build a responsive navbar using only CSS Grid..."
                 </p>
               </div>
 
