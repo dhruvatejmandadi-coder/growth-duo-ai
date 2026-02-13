@@ -9,7 +9,6 @@ import Index from "./pages/Index";
 import Courses from "./pages/Courses";
 import CourseView from "./pages/CourseView";
 import AITutor from "./pages/AITutor";
-import Dashboard from "./pages/Dashboard";
 import Community from "./pages/Community";
 import Challenges from "./pages/Challenges";
 import ProgressPage from "./pages/ProgressPage";
@@ -31,7 +30,6 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/courses/:id" element={<CourseView />} />
             <Route path="/ai-tutor" element={<AITutor />} />

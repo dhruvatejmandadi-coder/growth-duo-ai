@@ -22,7 +22,7 @@ export default function Signup() {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      navigate("/dashboard");
+      navigate("/courses");
     }
   }, [user, navigate]);
 
@@ -60,9 +60,9 @@ export default function Signup() {
     } else {
       toast({
         title: "Account created!",
-        description: "Welcome to MentorAI. You are now logged in.",
+        description: "Welcome to Repend AI. You are now logged in.",
       });
-      navigate("/dashboard");
+      navigate("/courses");
     }
   };
 
