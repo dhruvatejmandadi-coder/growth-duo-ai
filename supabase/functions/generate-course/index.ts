@@ -47,23 +47,29 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
+        temperature: 0.4,
         messages: [
           {
             role: "system",
-            content: `You are a course creator AI. Generate a structured course with 4-6 progressive modules on the given topic.
+            content: `You are an educational lab generator and course creator. Generate a structured course with 4-6 progressive modules on the given topic.
+
+CRITICAL INSTRUCTION — TOPIC LOCKING:
+- Before generating lab_data for each module, internally restate the module title and the course topic. Ensure every parameter, scenario, or classification item directly tests knowledge of that EXACT topic. Do NOT output the restatement.
+- All lab parameters, scenarios, and classification items MUST reference real concepts from the module's lesson_content. Do NOT introduce unrelated subtopics. If unsure, stay narrower — never broader.
+- All lab_data MUST be based only on the module's lesson_content. If information is not present in the lesson, do not invent it.
 
 CRITICAL RULES FOR lab_data:
 - Every module MUST have a fully populated lab_data object. NEVER return an empty {} object.
 - lab_data MUST contain all required fields for its lab_type.
-- Labs must be SPECIFIC to the module topic, not generic "understanding/practice" sliders.
+- Labs must be SPECIFIC to the module topic with domain-specific variables, NOT generic "understanding/practice/critical thinking" sliders.
 
-For "simulation" labs: Create parameters that represent REAL measurable variables from the topic.
+For "simulation" labs: Create parameters that represent REAL measurable variables from the module's specific lesson content.
   Example for "Stoichiometry": parameters like "Moles of Reactant A" (mol), "Moles of Reactant B" (mol), "Temperature" (°C)
   Example for "Supply & Demand": parameters like "Price" ($), "Consumer Income" ($K), "Number of Competitors"
   
-For "decision" labs: Create realistic scenarios with meaningful trade-offs from the topic domain.
+For "decision" labs: Create realistic scenarios with meaningful trade-offs drawn directly from concepts in the module's lesson content.
 
-For "classification" labs: Use real items and categories from the topic (e.g., types of reactions, parts of speech).
+For "classification" labs: Use real items and categories from the module's lesson content (e.g., types of reactions, parts of speech, literary devices).
 
 Make each lab genuinely educational — a student should learn by interacting with it.`
           },
@@ -255,19 +261,47 @@ Make each lab genuinely educational — a student should learn by interacting wi
       if (!isValid) {
         console.warn(`[generate-course] Empty/invalid lab_data for module "${mod.title}", generating server fallback.`);
         labType = "simulation";
+
+        // Extract key noun phrases from lesson content for topic-relevant fallback
+        const lessonSnippet = (mod.lesson_content || "").slice(0, 300);
+        const words = lessonSnippet
+          .replace(/[^a-zA-Z\s]/g, " ")
+          .split(/\s+/)
+          .filter((w: string) => w.length > 5);
+        // Pick up to 3 unique capitalized or long words as parameter names
+        const seen = new Set<string>();
+        const keyTerms: string[] = [];
+        for (const w of words) {
+          const lower = w.toLowerCase();
+          if (!seen.has(lower) && !["which", "their", "these", "about", "through", "between", "understanding"].includes(lower)) {
+            seen.add(lower);
+            keyTerms.push(w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+            if (keyTerms.length >= 3) break;
+          }
+        }
+        if (keyTerms.length < 3) {
+          const titleWords = mod.title.split(/\s+/).filter((w: string) => w.length > 3);
+          for (const w of titleWords) {
+            if (keyTerms.length >= 3) break;
+            const cap = w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+            if (!seen.has(cap.toLowerCase())) { keyTerms.push(cap); seen.add(cap.toLowerCase()); }
+          }
+        }
+        while (keyTerms.length < 3) keyTerms.push(`Factor ${keyTerms.length + 1}`);
+        const icons = ["🔬", "📊", "⚙️"];
+
         labData = {
           title: `${mod.title} Lab`,
           description: `Explore the key factors of ${mod.title.toLowerCase()} in this interactive simulation.`,
-          equation_label: `${mod.title} Factor Model`,
-          equation_template: "Factor A + Factor B + Factor C → Output",
-          output_label: "Overall Understanding",
-          parameters: [
-            { name: "Conceptual Grasp", icon: "🧠", unit: "%", min: 0, max: 100, default: 50, description: "Understanding of core concepts" },
-            { name: "Practical Skills", icon: "✏️", unit: "%", min: 0, max: 100, default: 30, description: "Hands-on application ability" },
-            { name: "Critical Thinking", icon: "💡", unit: "%", min: 0, max: 100, default: 40, description: "Analytical reasoning applied to the topic" },
-          ],
+          equation_label: `${mod.title} Model`,
+          equation_template: `${keyTerms[0]} + ${keyTerms[1]} + ${keyTerms[2]} → Output`,
+          output_label: `${mod.title} Score`,
+          parameters: keyTerms.map((term: string, i: number) => ({
+            name: term, icon: icons[i] || "📐", unit: "%", min: 0, max: 100, default: 50,
+            description: `Level of ${term.toLowerCase()} as it relates to ${mod.title.toLowerCase()}`
+          })),
           thresholds: [
-            { label: "🌟 Expert Level", min_percent: 80, message: "Strong command of all key factors." },
+            { label: "🌟 Expert Level", min_percent: 80, message: `Strong command of ${mod.title.toLowerCase()}.` },
             { label: "📈 Progressing", min_percent: 50, message: "Solid foundation — focus on weaker areas." },
             { label: "🔰 Beginner", min_percent: 0, message: "Keep exploring — increase each factor to build mastery." },
           ],
