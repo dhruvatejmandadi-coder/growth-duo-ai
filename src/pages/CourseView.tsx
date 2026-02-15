@@ -25,8 +25,8 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import ReactMarkdown from "react-markdown";
 import InteractiveLab from "@/components/labs/InteractiveLab";
+import LessonSlides from "@/components/courses/LessonSlides";
 
 type Module = {
   id: string;
@@ -192,31 +192,11 @@ export default function CourseView() {
 
               {/* Lesson */}
               {activeContent === "lesson" && (
-                <div className="space-y-6">
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="prose prose-sm dark:prose-invert max-w-none text-foreground prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-code:text-accent prose-code:bg-secondary prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-pre:bg-secondary prose-pre:border prose-pre:border-border">
-                        <ReactMarkdown>{mod.lesson_content}</ReactMarkdown>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  {mod.youtube_url && (
-                    <Card>
-                      <CardContent className="p-6">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Youtube className="w-5 h-5 text-red-500" />
-                          <h3 className="font-semibold">Recommended Video</h3>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-3">{mod.youtube_title}</p>
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={mod.youtube_url} target="_blank" rel="noopener noreferrer">
-                            <Youtube className="w-4 h-4 mr-1" /> Search on YouTube
-                          </a>
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
+                <LessonSlides
+                  content={mod.lesson_content}
+                  youtubeUrl={mod.youtube_url}
+                  youtubeTitle={mod.youtube_title}
+                />
               )}
 
               {/* Lab */}
