@@ -79,6 +79,19 @@ CRITICAL: LAB TYPE VARIETY
 - Simulation labs work great for modules about measurable variables, cause-and-effect, or quantitative relationships.
 - Pick the lab_type that best fits each module's content — do NOT default everything to simulation.
 
+LESSON FORMAT — INTERACTIVE SLIDES:
+- Format each module's lesson_content as a series of SLIDES separated by --- (three dashes on their own line).
+- Each slide MUST start with an emoji-prefixed heading: ## 🎯 Title
+- Keep each slide to 2-3 short paragraphs MAX.
+- Aim for 4-6 slides per module.
+- Use relevant emojis throughout the text to make content fun and engaging 🎉
+- Example format:
+  ## 🧬 What is DNA?
+  DNA stands for deoxyribonucleic acid! 🔬 It carries genetic instructions...
+  ---
+  ## 🔗 DNA Structure
+  DNA has a double-helix shape 🌀 made of nucleotide bases...
+
 Make each lab genuinely educational — a student should learn by interacting with it.`
           },
           { role: "user", content: `Create a comprehensive course on: ${topic}` }
@@ -100,7 +113,7 @@ Make each lab genuinely educational — a student should learn by interacting wi
                       type: "object",
                       properties: {
                         title: { type: "string" },
-                        lesson_content: { type: "string", description: "Detailed lesson in markdown, 3-5 paragraphs with examples" },
+                        lesson_content: { type: "string", description: "Detailed lesson formatted as slides separated by --- dividers. Each slide starts with an emoji heading (## 🎯 Title). 4-6 slides per module, 2-3 paragraphs each. Use emojis throughout to make content engaging." },
                         youtube_query: { type: "string" },
                         youtube_title: { type: "string" },
                         lab_type: { type: "string", enum: ["simulation", "decision", "classification"] },
