@@ -10,7 +10,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { usePoints } from "@/hooks/usePoints";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Mail, BookOpen, GraduationCap, Save, Trophy, Flame, Award, Loader2 } from "lucide-react";
+import { User, Mail, Trophy, Flame, Award, Save, Loader2 } from "lucide-react";
 import CertificateCard from "@/components/courses/CertificateCard";
 
 const PROFILE_KEY = "repend_profile";
@@ -19,7 +19,9 @@ function loadProfile() {
   try {
     const stored = localStorage.getItem(PROFILE_KEY);
     if (stored) return JSON.parse(stored);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return null;
 }
 
@@ -33,37 +35,53 @@ export default function Profile() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { totalPoints, streak, achievements } = usePoints();
+
   const [loading, setLoading] = useState(false);
   const [certificates, setCertificates] = useState<CertificateRow[]>([]);
   const [certsLoading, setCertsLoading] = useState(true);
 
   const saved = loadProfile();
-  const [fullName, setFullName] = useState(saved?.fullName || user?.user_metadata?.full_name || user?.user_metadata?.name || "");
-  const [role, setRole] = useState<"learner" | "mentor">(saved?.role || (user?.user_metadata?.role as "learner" | "mentor") || "learner");
+
+  const [fullName, setFullName] = useState(
+    saved?.fullName || user?.user_metadata?.full_name || user?.user_metadata?.name || "",
+  );
+
   const [bio, setBio] = useState(saved?.bio || "");
 
   useEffect(() => {
     if (!user) return;
+
     (async () => {
       const { data } = await supabase
         .from("certificates")
         .select("certificate_id, issued_at, courses(title)")
         .eq("user_id", user.id)
         .order("issued_at", { ascending: false });
+
       setCertificates((data as any) || []);
       setCertsLoading(false);
     })();
   }, [user]);
 
   const getInitials = (name: string) =>
-    name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+    name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
 
   const handleSave = () => {
     setLoading(true);
-    localStorage.setItem(PROFILE_KEY, JSON.stringify({ fullName, role, bio }));
+
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({ fullName, bio }));
+
     setTimeout(() => {
       setLoading(false);
-      toast({ title: "Profile updated", description: "Your changes have been saved." });
+      toast({
+        title: "Profile updated",
+        description: "Your changes have been saved.",
+      });
     }, 300);
   };
 
@@ -90,6 +108,7 @@ export default function Profile() {
               </div>
             </CardContent>
           </Card>
+
           <Card className="bg-card border-border">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center">
@@ -101,6 +120,7 @@ export default function Profile() {
               </div>
             </CardContent>
           </Card>
+
           <Card className="bg-card border-border">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
@@ -122,6 +142,7 @@ export default function Profile() {
               Certificates
             </CardTitle>
           </CardHeader>
+
           <CardContent>
             {certsLoading ? (
               <div className="flex justify-center py-4">
@@ -155,6 +176,7 @@ export default function Profile() {
               Profile Information
             </CardTitle>
           </CardHeader>
+
           <CardContent className="space-y-6">
             <div className="flex items-center gap-4">
               <Avatar className="w-20 h-20">
@@ -172,7 +194,12 @@ export default function Profile() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="fullName">Full Name</Label>
-                <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Enter your full name" />
+                <Input
+                  id="fullName"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Enter your full name"
+                />
               </div>
 
               <div className="space-y-2">
@@ -195,24 +222,6 @@ export default function Profile() {
                   maxLength={500}
                 />
                 <p className="text-xs text-muted-foreground text-right">{bio.length}/500</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>I am a</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button type="button" onClick={() => setRole("learner")}
-                    className={`p-4 rounded-xl border-2 text-left transition-all ${role === "learner" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"}`}>
-                    <BookOpen className={`w-5 h-5 mb-2 ${role === "learner" ? "text-primary" : "text-muted-foreground"}`} />
-                    <p className="font-semibold text-sm">Learner</p>
-                    <p className="text-xs text-muted-foreground">I want to learn new skills</p>
-                  </button>
-                  <button type="button" onClick={() => setRole("mentor")}
-                    className={`p-4 rounded-xl border-2 text-left transition-all ${role === "mentor" ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"}`}>
-                    <GraduationCap className={`w-5 h-5 mb-2 ${role === "mentor" ? "text-primary" : "text-muted-foreground"}`} />
-                    <p className="font-semibold text-sm">Mentor</p>
-                    <p className="text-xs text-muted-foreground">I want to teach others</p>
-                  </button>
-                </div>
               </div>
             </div>
 
