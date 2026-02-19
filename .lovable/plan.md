@@ -1,64 +1,73 @@
 
-# Remove Standalone Labs, Fold Decisions Into Courses
+# Merge Decision + Simulation Into One Unified Module
 
-## Overview
+## What Changes
 
-Delete the entire standalone Labs system (page, route, sidebar link, standalone lab data, runner, completion screen). Keep the **in-course interactive labs** (SimulationLab, DecisionLab, ClassificationLab) that are already embedded inside course modules -- these stay untouched. The `lab_results` database table remains (it stores per-user data) but is no longer actively written to from the standalone system.
+**Delete** `DecisionLab.tsx` -- its functionality gets absorbed into `SimulationLab.tsx` (which already has decision scenarios that move sliders).
 
-## What Gets Deleted
+**Update** `InteractiveLab.tsx`:
+- Remove the `DecisionLab` import and rendering branch
+- Route ALL lab types (`"simulation"` and `"decision"`) to `SimulationLab`
+- When AI generates a `"decision"` type lab, convert its `scenarios` data into the simulation format (parameters + decisions that affect them)
 
-### Files to delete entirely:
-- `src/pages/Labs.tsx` -- standalone Labs page
-- `src/data/labs.ts` -- standalone lab definitions (Startup Founder, Career Decision, Productivity)
-- `src/components/labs/LabRunner.tsx` -- standalone lab engine
-- `src/components/labs/LabCompletionScreen.tsx` -- standalone lab completion screen
+**Update** `InteractiveLab.tsx` fallback logic:
+- All fallbacks produce simulation-with-decisions format (already mostly done)
+- Add decision scenarios to the existing topic-based fallbacks (currently they only have sliders, no decisions)
 
-### Files to modify:
+**Update** `generate-course` edge function:
+- Remove the separate `"decision"` lab type from AI generation
+- All labs generate as `"simulation"` with both `parameters` (sliders) and `decisions` (scenarios that move sliders)
+- Update the prompt to always produce the combined format
 
-**`src/App.tsx`**
-- Remove the `/labs` route
-- Remove the `Labs` import
+**Update** `ClassificationLab` -- stays as-is (it's a different mechanic entirely: drag-and-sort)
 
-**`src/components/layout/AppSidebar.tsx`**
-- Remove "Labs" from `authedMainItems`
-- Remove `FlaskConical` import
+## The Unified Flow
 
-**`src/hooks/usePoints.ts`**
-- Remove `LAB_COMPLETION: 75` from `POINTS_VALUES`
+1. User sees scenario questions first (AI-generated, topic-specific)
+2. Each choice adjusts slider values with visible effect badges
+3. After answering, user can fine-tune sliders manually
+4. Live outcome bar updates in real-time
+5. All scenarios done -> summary banner, sliders still editable
 
-**`src/pages/ProgressPage.tsx`**
-- Remove "Complete a lab" from the "How to Earn" list
+This is exactly what `SimulationLab.tsx` already does. The only work is removing the separate `DecisionLab` path and ensuring the AI never generates standalone decision labs.
 
-**`src/components/landing/ValueProp.tsx`**
-- Update copy to say "interactive decision modules" instead of "interactive labs"
+## Files
 
-## What Stays (No Changes)
+### Delete
+- `src/components/labs/DecisionLab.tsx`
 
-These are the **in-course** lab components that render inside `CourseView.tsx` when viewing a module's "Lab" tab. They are not part of the standalone Labs system:
+### Modify
+- `src/components/labs/InteractiveLab.tsx` -- remove DecisionLab import/branch, convert any incoming `"decision"` data to simulation format, add decision scenarios to all topic fallbacks
+- `supabase/functions/generate-course/index.ts` -- remove `"decision"` as a separate lab type, always generate combined simulation+decisions format, update fallback logic
 
-- `src/components/labs/InteractiveLab.tsx` -- router for in-course labs (stays)
-- `src/components/labs/DecisionLab.tsx` -- decision scenarios inside courses (stays)
-- `src/components/labs/SimulationLab.tsx` -- slider simulations inside courses (stays)
-- `src/components/labs/ClassificationLab.tsx` -- sorting exercises inside courses (stays)
-- `src/pages/CourseView.tsx` -- already has Lesson/Lab/Quiz tabs per module (stays as-is)
-- `supabase/functions/generate-course/index.ts` -- already generates decision/simulation/classification labs per module (stays)
+### No Changes
+- `src/components/labs/SimulationLab.tsx` -- already has the full decision+slider UI
+- `src/components/labs/ClassificationLab.tsx` -- separate mechanic, stays
 
-The course generation already creates decision labs tied to each module's topic. The screenshot you shared (Thrust Simulator with sliders) is an in-course simulation lab -- that stays.
+## Technical Details
 
-## Database
+### InteractiveLab.tsx Changes
 
-- `lab_results` table stays in place (has existing user data). No migration needed.
-- No new tables or schema changes required.
+In `isValidLabData`: remove the `"decision"` branch. Incoming `"decision"` type data gets converted to simulation format via a converter function:
 
-## Summary
+```text
+function convertDecisionToSimulation(data): SimulationData
+  - Extract unique "effect" keys from all scenario choices to build parameters
+  - Map scenarios to the decisions array format SimulationLab expects
+  - Generate thresholds automatically
+```
 
-This is purely a deletion/cleanup task. The in-course lab system is already fully functional with decision, simulation, and classification types generated per-module by the AI course generator. The standalone "Labs" feature was a parallel system that is now redundant.
+In `generateTopicFallback`: add 2-3 decision scenarios to each topic category (economics gets budget decisions, science gets experiment decisions, etc.)
 
-## Technical Implementation Order
+### Edge Function Changes
 
-1. Delete the 4 standalone lab files
-2. Update `App.tsx` (remove route + import)
-3. Update `AppSidebar.tsx` (remove Labs nav item)
-4. Update `usePoints.ts` (remove LAB_COMPLETION)
-5. Update `ProgressPage.tsx` (remove lab entry from How to Earn)
-6. Update `ValueProp.tsx` (update marketing copy)
+Update the AI prompt to only generate `"simulation"` labs with both `parameters` and `decisions` arrays. Remove the `"decision"` fallback branch. The validation check for `"decision"` type gets removed since it's no longer generated.
+
+## Implementation Order
+
+1. Update `generate-course` edge function (remove decision type, always generate combined)
+2. Deploy edge function
+3. Add decision scenarios to all topic fallbacks in `InteractiveLab.tsx`
+4. Add converter function for legacy `"decision"` data in `InteractiveLab.tsx`
+5. Remove `DecisionLab` import/branch from `InteractiveLab.tsx`
+6. Delete `DecisionLab.tsx`
