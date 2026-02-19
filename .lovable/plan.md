@@ -1,202 +1,64 @@
-# Repend AI -- Major Platform Upgrade
 
-This is a large upgrade covering 10 feature areas. To avoid breaking existing features and keep quality high, the implementation is split into **3 phases**. Each phase builds on the previous one.
+# Remove Standalone Labs, Fold Decisions Into Courses
 
----
+## Overview
 
-## Phase 1: Core Infrastructure (This Implementation)
+Delete the entire standalone Labs system (page, route, sidebar link, standalone lab data, runner, completion screen). Keep the **in-course interactive labs** (SimulationLab, DecisionLab, ClassificationLab) that are already embedded inside course modules -- these stay untouched. The `lab_results` database table remains (it stores per-user data) but is no longer actively written to from the standalone system.
 
-These are the foundational changes that everything else depends on.
+## What Gets Deleted
 
-### 1A. Course Completion System
+### Files to delete entirely:
+- `src/pages/Labs.tsx` -- standalone Labs page
+- `src/data/labs.ts` -- standalone lab definitions (Startup Founder, Career Decision, Productivity)
+- `src/components/labs/LabRunner.tsx` -- standalone lab engine
+- `src/components/labs/LabCompletionScreen.tsx` -- standalone lab completion screen
 
-**Database changes:**
+### Files to modify:
 
-- Create `course_progress` table: tracks `user_id`, `course_id`, `completed_lessons` (jsonb array of module IDs), `completed` (boolean), `completed_at`
-- Create `badges` table: `name`, `description`, `icon`, `course_id` (nullable for non-course badges)
-- Create `user_badges` table: `user_id`, `badge_id`, `earned_at`
-- All tables get RLS policies (users can only read/write their own data)
+**`src/App.tsx`**
+- Remove the `/labs` route
+- Remove the `Labs` import
 
-**Code changes:**
+**`src/components/layout/AppSidebar.tsx`**
+- Remove "Labs" from `authedMainItems`
+- Remove `FlaskConical` import
 
-- Update `CourseView.tsx`: When all modules are marked complete, auto-set course as completed, trigger badge award, show animated completion screen
-- Create `CourseCompletionScreen` component: animated confetti/metrics, badge display, points awarded
-- Create `useCourseProgress` hook: manages course progress state, syncs with database
-- Award configurable points on course completion (default 150 pts)
+**`src/hooks/usePoints.ts`**
+- Remove `LAB_COMPLETION: 75` from `POINTS_VALUES`
 
-### 1B. Certificate System
+**`src/pages/ProgressPage.tsx`**
+- Remove "Complete a lab" from the "How to Earn" list
 
-**Database changes:**
+**`src/components/landing/ValueProp.tsx`**
+- Update copy to say "interactive decision modules" instead of "interactive labs"
 
-- Create `certificates` table: `user_id`, `course_id`, `certificate_id` (unique string), `issued_at`
-- RLS: users can read their own certificates
+## What Stays (No Changes)
 
-**Code changes:**
+These are the **in-course** lab components that render inside `CourseView.tsx` when viewing a module's "Lab" tab. They are not part of the standalone Labs system:
 
-- Create `CertificateCard` component: displays certificate with course name, user name, date, unique ID
-- Add "Download PDF" button (generates client-side PDF using canvas/html rendering)
-- Add "Share" button (copies shareable link or opens share dialog)
-- Certificates auto-generated when course is completed
-- Add certificates section to Profile page
+- `src/components/labs/InteractiveLab.tsx` -- router for in-course labs (stays)
+- `src/components/labs/DecisionLab.tsx` -- decision scenarios inside courses (stays)
+- `src/components/labs/SimulationLab.tsx` -- slider simulations inside courses (stays)
+- `src/components/labs/ClassificationLab.tsx` -- sorting exercises inside courses (stays)
+- `src/pages/CourseView.tsx` -- already has Lesson/Lab/Quiz tabs per module (stays as-is)
+- `supabase/functions/generate-course/index.ts` -- already generates decision/simulation/classification labs per module (stays)
 
-### 1C. Quiz Upgrade
+The course generation already creates decision labs tied to each module's topic. The screenshot you shared (Thrust Simulator with sliders) is an in-course simulation lab -- that stays.
 
-**Database changes:**
+## Database
 
-- Create `quiz_attempts` table: `user_id`, `module_id`, `answers` (jsonb), `score`, `created_at`
+- `lab_results` table stays in place (has existing user data). No migration needed.
+- No new tables or schema changes required.
 
-**Code changes:**
+## Summary
 
-- Update quiz rendering in `CourseView.tsx` to show explanations after each answer (read from existing quiz data `explanation` field)
-- Save quiz attempts to database
-- Store best score per module
+This is purely a deletion/cleanup task. The in-course lab system is already fully functional with decision, simulation, and classification types generated per-module by the AI course generator. The standalone "Labs" feature was a parallel system that is now redundant.
 
-### 1D. UX Improvements (Auth Redirect)
+## Technical Implementation Order
 
-- Ensure `Index.tsx` redirect for authenticated users works reliably (already partially done)
-- Add inline validation error messages to Login/Signup forms (required fields)
-- Ensure no guest landing page flash for authenticated users
-
----
-
-## Phase 2: Engagement Features (Next Implementation)
-
-### 2A. Recommended Courses After Survey
-
-- Create `RecommendedCoursesScreen` component shown after survey completion
-- Display top 3 recommended course topics based on `interests`, `skill_level`, `working_toward`
-- Save recommendations to a `survey_recommendations` table
-- Add "Start Course" CTA that pre-fills the course generator
-
-### 2B. Points Page Upgrade
-
-- Revamp `ProgressPage.tsx` to show points breakdown by source (courses, labs, quizzes)
-- Add level system with progress bar
-- Show next milestone preview with visual indicator
-- Add "Lab completion" and "Course completion" to the "How to Earn" section
-
-### 2C. Labs Integration Into Lessons
-
-- Link standalone labs to course topics (add `related_course_topic` field to lab definitions)
-- Labs unlock only after lesson completion (check `course_progress.completed_lessons`)
-- Lab completion contributes toward course completion percentage
-- Remove Simulation Labs
-- Add decision making labs related to the chosen topic and decisions much impact sliders or a score
-
-### 2D. Lesson Structure Improvement
-
-- Add clear learning objectives at top of each lesson
-- Integrated quiz and lab indicators within lesson view
-- Per-module completion progress indicator in sidebar
-
----
-
-## Phase 3: Social and Access Control (Future Implementation)
-
-### 3A. Community Upgrade
-
-- Add like/comment/share to posts (new `post_likes`, `post_comments` tables)
-- Auto-generated achievement posts when course/badge/certificate earned
-- Private messaging system (`direct_messages` table)
-
----
-
-## Technical Details -- Phase 1 Implementation
-
-### Database Migration SQL
-
-```text
--- course_progress table
-CREATE TABLE public.course_progress (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  course_id uuid NOT NULL REFERENCES public.courses(id) ON DELETE CASCADE,
-  completed_lessons jsonb DEFAULT '[]'::jsonb,
-  completed boolean DEFAULT false,
-  completed_at timestamptz,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now(),
-  UNIQUE(user_id, course_id)
-);
-ALTER TABLE public.course_progress ENABLE ROW LEVEL SECURITY;
-
--- badges table
-CREATE TABLE public.badges (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  description text,
-  icon text NOT NULL DEFAULT 'trophy',
-  course_id uuid REFERENCES public.courses(id) ON DELETE SET NULL,
-  created_at timestamptz DEFAULT now()
-);
-ALTER TABLE public.badges ENABLE ROW LEVEL SECURITY;
-
--- user_badges table
-CREATE TABLE public.user_badges (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  badge_id uuid NOT NULL REFERENCES public.badges(id) ON DELETE CASCADE,
-  earned_at timestamptz DEFAULT now(),
-  UNIQUE(user_id, badge_id)
-);
-ALTER TABLE public.user_badges ENABLE ROW LEVEL SECURITY;
-
--- certificates table
-CREATE TABLE public.certificates (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  course_id uuid NOT NULL REFERENCES public.courses(id) ON DELETE CASCADE,
-  certificate_id text UNIQUE NOT NULL,
-  issued_at timestamptz DEFAULT now(),
-  UNIQUE(user_id, course_id)
-);
-ALTER TABLE public.certificates ENABLE ROW LEVEL SECURITY;
-
--- quiz_attempts table
-CREATE TABLE public.quiz_attempts (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  module_id uuid NOT NULL REFERENCES public.course_modules(id) ON DELETE CASCADE,
-  answers jsonb DEFAULT '[]'::jsonb,
-  score integer DEFAULT 0,
-  total integer DEFAULT 0,
-  created_at timestamptz DEFAULT now()
-);
-ALTER TABLE public.quiz_attempts ENABLE ROW LEVEL SECURITY;
-
--- RLS policies for all tables (users can read/insert their own data)
-```
-
-### New Files
-
-- `src/hooks/useCourseProgress.ts` -- hook for tracking/syncing course progress
-- `src/components/courses/CourseCompletionScreen.tsx` -- animated completion overlay
-- `src/components/courses/CertificateCard.tsx` -- certificate display + download/share
-
-### Modified Files
-
-- `src/pages/CourseView.tsx` -- integrate completion tracking, quiz saving, completion screen
-- `src/pages/Profile.tsx` -- add certificates section
-- `src/pages/Login.tsx` / `src/pages/Signup.tsx` -- inline validation errors
-- `src/hooks/usePoints.ts` -- add COURSE_COMPLETION point type (150 pts)
-- `src/pages/ProgressPage.tsx` -- add course completion and lab entries to "How to Earn"
-
-### Implementation Order
-
-1. Run database migration (create all 5 tables with RLS)
-2. Create `useCourseProgress` hook
-3. Update `CourseView.tsx` with completion tracking + quiz saving
-4. Create `CourseCompletionScreen` component
-5. Create `CertificateCard` component
-6. Update Profile page with certificates
-7. Add inline validation to Login/Signup
-8. Update points system
-
-### Important Rules Followed
-
-- No existing features removed
-- Modular code structure maintained
-- Existing `usePoints` hook extended (not replaced)
-- shadcn + Tailwind styling preserved
-- All database tables fully wired with RLS
-- No placeholder systems -- everything connected end-to-end
+1. Delete the 4 standalone lab files
+2. Update `App.tsx` (remove route + import)
+3. Update `AppSidebar.tsx` (remove Labs nav item)
+4. Update `usePoints.ts` (remove LAB_COMPLETION)
+5. Update `ProgressPage.tsx` (remove lab entry from How to Earn)
+6. Update `ValueProp.tsx` (update marketing copy)
