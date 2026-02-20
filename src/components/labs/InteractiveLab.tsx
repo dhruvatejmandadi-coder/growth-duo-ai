@@ -155,7 +155,7 @@ function SimulationLabInline({ data }: { data: SimulationData }) {
     <div className="space-y-5">
       {/* ===== SCENARIOS ===== */}
 
-      {decisions.length > 0 && !allDone && (
+      {decisions.length > 0 && !allDone && currentDecision < decisions.length && decisions[currentDecision] && (
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="p-5 space-y-4">
             <div className="flex items-center gap-2">
@@ -166,10 +166,10 @@ function SimulationLabInline({ data }: { data: SimulationData }) {
             </div>
 
             <p className="text-sm font-medium">
-              {decisions[currentDecision].emoji} {decisions[currentDecision].question}
+              {decisions[currentDecision].emoji ?? "🔬"} {decisions[currentDecision].question}
             </p>
 
-            {decisions[currentDecision].choices.map((c, i) => {
+            {(decisions[currentDecision].choices ?? []).map((c, i) => {
               const isChosen = answered[currentDecision] === i;
               const isAnswered = answered[currentDecision] !== undefined;
 
