@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { FlaskConical, TrendingUp, TrendingDown, Minus, MessageCircleQuestion } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, MessageCircleQuestion } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,7 @@ type Decision = {
   choices: {
     text: string;
     explanation?: string;
-    effects: Record<string, number>;
+    effects?: Record<string, number>;
   }[];
 };
 
@@ -39,40 +39,46 @@ type SimulationData = {
 type Props = {
   labType?: string | null;
   labData?: any;
-  labTitle?: string | null;
-  labDescription?: string | null;
 };
 
 /* ================= HELPERS ================= */
 
 function getParamLevel(value: number, min: number, max: number) {
   const pct = ((value - min) / (max - min)) * 100;
-
-  if (pct >= 75) return { level: "high", color: "text-green-500", icon: TrendingUp };
-  if (pct >= 35) return { level: "mid", color: "text-yellow-500", icon: Minus };
-  return { level: "low", color: "text-red-500", icon: TrendingDown };
+  if (pct >= 75) return { color: "text-green-500", icon: TrendingUp };
+  if (pct >= 35) return { color: "text-yellow-500", icon: Minus };
+  return { color: "text-red-500", icon: TrendingDown };
 }
 
-/* ================= AUTO FIX EMPTY EFFECTS ================= */
+/* ================= ULTRA SAFE EFFECT FIX ================= */
 
-function ensureDecisionEffects(decisions: Decision[], parameters: Parameter[]): Decision[] {
-  if (!decisions?.length || !parameters?.length) return decisions ?? [];
+function ensureDecisionEffects(decisions: Decision[] = [], parameters: Parameter[] = []): Decision[] {
+  if (!decisions.length || !parameters.length) return decisions;
 
-  return decisions.map((decision) => ({
+  return decisions.map((decision, dIndex) => ({
     ...decision,
-    choices: decision.choices.map((choice, index) => {
-      const hasRealEffects = choice.effects && Object.values(choice.effects).some((v) => v !== 0);
+    choices: decision.choices.map((choice, cIndex) => {
+      const effects = choice.effects ?? {};
+      const hasRealEffect =
+        Object.keys(effects).length > 0 && Object.values(effects).some((v) => typeof v === "number" && v !== 0);
 
-      if (hasRealEffects) return choice;
+      if (hasRealEffect) return choice;
 
-      // 🔥 Auto generate if empty
-      const param = parameters[index % parameters.length];
+      // 🔥 Always generate a guaranteed working delta
+      const param = parameters[(dIndex + cIndex) % parameters.length];
       const range = param.max - param.min;
-      const delta = Math.round(range * 0.2) * (index % 2 === 0 ? 1 : -1) || Math.round(range * 0.15);
+
+      let delta = Math.round(range * 0.2);
+      if (delta === 0) delta = 1;
+
+      // Alternate + / -
+      if ((dIndex + cIndex) % 2 === 1) delta *= -1;
 
       return {
         ...choice,
-        effects: { [param.name]: delta },
+        effects: {
+          [param.name]: delta,
+        },
       };
     }),
   }));
@@ -83,6 +89,7 @@ function ensureDecisionEffects(decisions: Decision[], parameters: Parameter[]): 
 function SimulationLabInline({ data }: { data: SimulationData }) {
   const parameters = data.parameters ?? [];
   const thresholds = data.thresholds ?? [];
+
   const rawDecisions = data.decisions ?? [];
 
   const decisions = useMemo(() => ensureDecisionEffects(rawDecisions, parameters), [rawDecisions, parameters]);
@@ -91,13 +98,16 @@ function SimulationLabInline({ data }: { data: SimulationData }) {
   const [currentDecision, setCurrentDecision] = useState(0);
   const [answered, setAnswered] = useState<Record<number, number>>({});
 
-  /* 🔥 RESET WHEN LAB CHANGES */
+  /* ===== INITIALIZE VALUES ONLY WHEN PARAMETERS CHANGE ===== */
   useEffect(() => {
+    if (!parameters.length) return;
+
     const initial = Object.fromEntries(parameters.map((p) => [p.name, p.default]));
+
     setValues(initial);
     setCurrentDecision(0);
     setAnswered({});
-  }, [data, parameters]);
+  }, [parameters]);
 
   /* ================= OUTCOME ================= */
 
@@ -105,7 +115,8 @@ function SimulationLabInline({ data }: { data: SimulationData }) {
     if (!parameters.length) return 0;
 
     const total = parameters.reduce((sum, p) => {
-      const pct = ((values[p.name] ?? p.default) - p.min) / (p.max - p.min);
+      const value = values[p.name] ?? p.default;
+      const pct = (value - p.min) / (p.max - p.min);
       return sum + pct;
     }, 0);
 
@@ -126,18 +137,19 @@ function SimulationLabInline({ data }: { data: SimulationData }) {
     if (answered[dIdx] !== undefined) return;
 
     const choice = decisions[dIdx]?.choices[cIdx];
-    if (!choice) return;
+    if (!choice?.effects) return;
 
     setValues((prev) => {
       const next = { ...prev };
 
-      Object.entries(choice.effects).forEach(([paramName, delta]) => {
+      Object.entries(choice.effects!).forEach(([paramName, delta]) => {
         const param = parameters.find((p) => p.name === paramName);
         if (!param) return;
 
         const current = next[paramName] ?? param.default;
+        const updated = current + delta;
 
-        next[paramName] = Math.max(param.min, Math.min(param.max, current + delta));
+        next[paramName] = Math.max(param.min, Math.min(param.max, updated));
       });
 
       return next;
@@ -197,7 +209,7 @@ function SimulationLabInline({ data }: { data: SimulationData }) {
       {/* ===== SLIDERS ===== */}
       {parameters.map((p) => {
         const value = values[p.name] ?? p.default;
-        const { level, color, icon: Icon } = getParamLevel(value, p.min, p.max);
+        const { color, icon: Icon } = getParamLevel(value, p.min, p.max);
 
         return (
           <Card key={p.name}>
