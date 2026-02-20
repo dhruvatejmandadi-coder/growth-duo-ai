@@ -52,7 +52,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "google/gemini-3-flash-preview",
         temperature: 0.4,
         messages: [
           {
@@ -145,16 +145,9 @@ Return structured JSON only via the function tool.
 
     const aiData = await response.json();
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    let courseData;
-    if (toolCall) {
-      courseData = JSON.parse(toolCall.function.arguments);
-    } else {
-      // Fallback: try to parse JSON from content
-      const content = aiData.choices?.[0]?.message?.content || "";
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error("No structured data returned from AI");
-      courseData = JSON.parse(jsonMatch[0]);
-    }
+    if (!toolCall) throw new Error("No tool call returned");
+
+    const courseData = JSON.parse(toolCall.function.arguments);
 
     await supabase
       .from("courses")
