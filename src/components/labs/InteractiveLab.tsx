@@ -257,14 +257,37 @@ function SimulationLabInline({ data }: { data: SimulationData }) {
   );
 }
 
+/* ================= EMPTY STATE ================= */
+
+function LabEmptyState({ labType }: { labType?: string | null }) {
+  return (
+    <Card className="border-dashed border-2 border-muted-foreground/20">
+      <CardContent className="p-8 text-center space-y-3">
+        <div className="text-4xl">🔬</div>
+        <h3 className="font-bold text-lg">Lab Data Unavailable</h3>
+        <p className="text-sm text-muted-foreground max-w-md mx-auto">
+          The {labType === "classification" ? "classification" : "simulation"} lab for this module wasn't generated properly.
+          Try regenerating the course to get interactive labs with scenarios and parameters.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
 /* ================= MAIN ================= */
 
-export default function InteractiveLab({ labType, labData }: Props) {
-  if (!labData) return null;
+export default function InteractiveLab({ labType, labData, labTitle, labDescription }: Props) {
+  if (!labData || (typeof labData === "object" && Object.keys(labData).length === 0)) {
+    return <LabEmptyState labType={labType} />;
+  }
 
   if (labType === "classification") {
+    const hasClassificationData = labData?.items?.length > 0 && labData?.categories?.length > 0;
+    if (!hasClassificationData) return <LabEmptyState labType={labType} />;
     return <ClassificationLab data={labData} />;
   }
 
+  const hasSimulationData = labData?.parameters?.length > 0;
+  if (!hasSimulationData) return <LabEmptyState labType={labType} />;
   return <SimulationLabInline data={labData} />;
 }

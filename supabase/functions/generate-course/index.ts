@@ -163,7 +163,63 @@ Return structured JSON only via the function tool.
       let labData = mod.lab_data;
       let labType = mod.lab_type;
 
-      // 🔥 FORCE DECISIONS + FIX EMPTY EFFECTS
+      // 🔥 GENERATE FALLBACK LAB DATA WHEN AI RETURNS EMPTY {}
+      const isEmptyObj = !labData || (typeof labData === "object" && Object.keys(labData).length === 0);
+
+      if (isEmptyObj && labType === "simulation") {
+        labData = {
+          parameters: [
+            { name: "Understanding", icon: "🧠", unit: "%", min: 0, max: 100, default: 50 },
+            { name: "Application", icon: "🔧", unit: "%", min: 0, max: 100, default: 40 },
+            { name: "Confidence", icon: "💪", unit: "%", min: 0, max: 100, default: 30 },
+          ],
+          thresholds: [
+            { label: "Expert", min_percent: 80, message: "Outstanding mastery of this topic!" },
+            { label: "Proficient", min_percent: 50, message: "Good understanding, keep practicing." },
+            { label: "Developing", min_percent: 0, message: "Review the lesson and try again." },
+          ],
+          decisions: [
+            {
+              question: `How would you approach learning ${mod.title}?`,
+              emoji: "📚",
+              choices: [
+                { text: "Deep dive into theory first", explanation: "Strong foundation approach.", effects: { Understanding: 25, Confidence: 10 } },
+                { text: "Jump into practice problems", explanation: "Hands-on learning approach.", effects: { Application: 25, Confidence: 15 } },
+              ],
+            },
+            {
+              question: `A student asks you to explain ${mod.title}. What do you do?`,
+              emoji: "🎓",
+              choices: [
+                { text: "Use real-world analogies", explanation: "Makes concepts relatable.", effects: { Understanding: 15, Application: 20 } },
+                { text: "Walk through step-by-step examples", explanation: "Methodical teaching.", effects: { Understanding: 20, Confidence: 15 } },
+              ],
+            },
+          ],
+        };
+      }
+
+      if (isEmptyObj && labType === "classification") {
+        labData = {
+          title: `Classify: ${mod.title}`,
+          description: `Sort the following items into the correct categories for ${mod.title}.`,
+          categories: [
+            { name: "Key Concept", emoji: "🔑", description: "Core ideas and principles" },
+            { name: "Application", emoji: "🔧", description: "Real-world uses and examples" },
+            { name: "Common Mistake", emoji: "⚠️", description: "Frequent errors and misconceptions" },
+          ],
+          items: [
+            { name: "Core formula or law", correct_category: "Key Concept", hint: "Think about the fundamental equation" },
+            { name: "Real-world example", correct_category: "Application", hint: "Where do you see this in daily life?" },
+            { name: "Unit conversion error", correct_category: "Common Mistake", hint: "A frequent source of wrong answers" },
+            { name: "Defining relationship", correct_category: "Key Concept", hint: "How variables relate to each other" },
+            { name: "Industry usage", correct_category: "Application", hint: "Professional or industrial context" },
+            { name: "Forgetting constraints", correct_category: "Common Mistake", hint: "What conditions must hold?" },
+          ],
+        };
+      }
+
+      // 🔥 FORCE DECISIONS + FIX EMPTY EFFECTS (for non-empty simulation data)
       if (labType === "simulation" && labData?.parameters?.length > 0) {
         const params = labData.parameters;
         const paramNames = params.map((p: any) => p.name);
