@@ -148,11 +148,11 @@ export default function Courses() {
           </div>
 
           {/* Guest hint */}
-          {!user && !isGenerating && (
-            <p className="text-xs text-muted-foreground mt-3">
-              No sign-up required to try — create an account to save your courses.
-            </p>
-          )}
+          {!user && !isGenerating &&
+          <p className="text-xs text-muted-foreground mt-3">create an account to save your courses.
+
+          </p>
+          }
         </div>
 
         {/* Courses List (authenticated only) */}
