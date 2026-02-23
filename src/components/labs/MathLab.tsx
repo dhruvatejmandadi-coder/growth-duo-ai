@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 
 type Parameter = {
   name: string;
@@ -16,59 +16,68 @@ type Props = {
   data: {
     title?: string;
     description?: string;
-    equationTemplate: string;
-    // Example: "y = A * sin(Bx + C) + D"
+
+    // IMPORTANT: pure JS expression using x
+    // Example:
+    // "m * x + b"
+    // "a * x * x + b * x + c"
+    // "A * Math.sin(B * x + C) + D"
+    // "A * Math.exp(k * x)"
+    equation: string;
+
     parameters: Parameter[];
-    xMin?: number;
-    xMax?: number;
+
+    domain?: {
+      min: number;
+      max: number;
+      step?: number;
+    };
   };
 };
 
 export default function GraphMathLab({ data }: Props) {
-  const { title, description, equationTemplate, parameters, xMin = -10, xMax = 10 } = data;
+  const { title, description, equation, parameters, domain = { min: -10, max: 10, step: 0.2 } } = data;
 
-  // State for parameters
   const [values, setValues] = useState<Record<string, number>>(
     Object.fromEntries(parameters.map((p) => [p.name, p.default])),
   );
 
-  // Generate equation string dynamically
-  const equationString = useMemo(() => {
-    let eq = equationTemplate;
+  // Replace parameters in equation string for display
+  const displayEquation = useMemo(() => {
+    let eq = equation;
     Object.entries(values).forEach(([key, val]) => {
       eq = eq.replaceAll(key, val.toString());
     });
-    return eq;
-  }, [equationTemplate, values]);
+    return `y = ${eq}`;
+  }, [equation, values]);
 
-  // Generate graph data points
+  // Generate graph points
   const graphData = useMemo(() => {
     const points = [];
-    for (let x = xMin; x <= xMax; x += 0.2) {
+
+    for (let x = domain.min; x <= domain.max; x += domain.step ?? 0.2) {
       let y = 0;
 
-      // Safe dynamic evaluation
       try {
-        const expr = equationTemplate
-          .replaceAll("sin", "Math.sin")
-          .replaceAll("cos", "Math.cos")
-          .replaceAll("tan", "Math.tan");
+        let evalExpr = equation;
 
-        let evalExpr = expr;
         Object.entries(values).forEach(([key, val]) => {
-          evalExpr = evalExpr.replaceAll(key, val.toString());
+          evalExpr = evalExpr.replaceAll(key, `(${val})`);
         });
 
-        const fn = new Function("x", `return ${evalExpr.split("=")[1]}`);
+        const fn = new Function("x", `return ${evalExpr}`);
         y = fn(x);
       } catch {
         y = 0;
       }
 
-      points.push({ x, y });
+      if (Number.isFinite(y)) {
+        points.push({ x, y });
+      }
     }
+
     return points;
-  }, [equationTemplate, values, xMin, xMax]);
+  }, [equation, values, domain]);
 
   return (
     <div className="space-y-6">
@@ -79,15 +88,16 @@ export default function GraphMathLab({ data }: Props) {
         </div>
       )}
 
-      <Badge variant="outline">{equationString}</Badge>
+      <Badge variant="outline">{displayEquation}</Badge>
 
       <Card>
-        <CardContent className="p-4 h-[350px]">
+        <CardContent className="p-4 h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={graphData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="x" type="number" domain={[xMin, xMax]} />
+              <XAxis type="number" dataKey="x" domain={[domain.min, domain.max]} />
               <YAxis />
+              <Tooltip />
               <Line type="monotone" dataKey="y" dot={false} strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
@@ -101,6 +111,7 @@ export default function GraphMathLab({ data }: Props) {
               <span>{param.name}</span>
               <span>{values[param.name]}</span>
             </div>
+
             <Slider
               min={param.min}
               max={param.max}
