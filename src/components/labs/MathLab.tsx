@@ -46,7 +46,7 @@ export default function GraphMathLab({ data }: Props) {
   const displayEquation = useMemo(() => {
     let eq = equation;
     Object.entries(values).forEach(([key, val]) => {
-      eq = eq.replaceAll(key, val.toString());
+      eq = eq.split(key).join(val.toString());
     });
     return `y = ${eq}`;
   }, [equation, values]);
@@ -62,7 +62,7 @@ export default function GraphMathLab({ data }: Props) {
         let evalExpr = equation;
 
         Object.entries(values).forEach(([key, val]) => {
-          evalExpr = evalExpr.replaceAll(key, `(${val})`);
+          evalExpr = evalExpr.split(key).join(`(${val})`);
         });
 
         const fn = new Function("x", `return ${evalExpr}`);

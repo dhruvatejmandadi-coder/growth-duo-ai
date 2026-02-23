@@ -284,14 +284,31 @@ Never return empty lab_data.
             },
           },
         ],
-        tool_choice: "auto",
+        tool_choice: { type: "function", function: { name: "create_course" } },
+        max_tokens: 16000,
       }),
     });
 
     const aiData = await response.json();
+
+    // Debug logging
+    const finishReason = aiData?.choices?.[0]?.finish_reason;
+    console.log("AI finish_reason:", finishReason);
+    console.log("AI usage:", JSON.stringify(aiData?.usage));
+
+    if (!response.ok) {
+      console.error("AI API error:", JSON.stringify(aiData));
+      throw new Error(`AI API returned ${response.status}`);
+    }
+
     const toolCall = aiData?.choices?.[0]?.message?.tool_calls?.[0];
 
-    if (!toolCall) throw new Error("AI did not return function call");
+    if (!toolCall) {
+      const content = aiData?.choices?.[0]?.message?.content;
+      console.error("No tool call. Content:", content?.substring(0, 500));
+      console.error("Full response keys:", JSON.stringify(Object.keys(aiData || {})));
+      throw new Error("Empty AI response");
+    }
 
     const parsed = JSON.parse(toolCall.function.arguments);
     const courseData = CourseSchema.parse(parsed);
