@@ -2,15 +2,17 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://esm.sh/zod@3.23.8";
 
+/* ===============================
+   CORS
+================================ */
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 /* ===============================
-   🔒 ZOD SCHEMA VALIDATION
+   ZOD VALIDATION
 ================================ */
-
 const CourseSchema = z.object({
   title: z.string(),
   description: z.string(),
@@ -57,10 +59,12 @@ serve(async (req) => {
     const { topic } = await req.json();
     if (!topic?.trim()) throw new Error("Topic is required");
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY missing");
 
-    // Create course row
+    /* ===============================
+       CREATE COURSE ROW
+    ================================= */
     const { data: course } = await supabase
       .from("courses")
       .insert({
@@ -72,132 +76,49 @@ serve(async (req) => {
       .select()
       .single();
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    /* ===============================
+       CALL OPENAI
+    ================================= */
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/gpt-4o",
-        temperature: 0.5,
+        model: "gpt-4o-mini",
+        temperature: 0.4,
         messages: [
           {
             role: "system",
             content: `
-You are an expert course architect specializing in creating comprehensive, progressive learning experiences.
+You are an expert course architect.
 
-CRITICAL REQUIREMENTS:
+CRITICAL RULES:
 
-1. LESSON STRUCTURE:
-   - Break each lesson into EXACTLY 4 concise slides
-   - Separate slides with "\\n---\\n"
-   - Write clearly for high school students
-   - Build difficulty progressively across modules
-
-2. INTERACTIVE LABS (choose one type per module):
-
-   A. SIMULATION LAB (decision-based):
-      - Include 3-5 adjustable parameters with realistic ranges (0-100)
-      - Create 3-5 decision scenarios with meaningful choices
-      - Each choice MUST use "set_state" (NOT "effects")
-      - set_state maps ALL parameter names to exact values (0-100)
-      - Provide clear thresholds for outcomes (success/failure/partial)
-      - Ensure logical cause-and-effect relationships
-      - Example structure:
-        {
-          "parameters": [
-            {"name": "Understanding", "icon": "🧠", "unit": "%", "min": 0, "max": 100, "default": 50, "description": "Your grasp of concepts"},
-            {"name": "Application", "icon": "🔧", "unit": "%", "min": 0, "max": 100, "default": 50, "description": "Ability to apply knowledge"}
-          ],
-          "decisions": [
-            {
-              "question": "How will you approach learning?",
-              "emoji": "🎯",
-              "choices": [
-                {
-                  "text": "Deep dive into theory first",
-                  "explanation": "Build strong foundations",
-                  "set_state": {"Understanding": 80, "Application": 40}
-                },
-                {
-                  "text": "Jump into practice",
-                  "explanation": "Learn by doing",
-                  "set_state": {"Understanding": 45, "Application": 85}
-                }
-              ]
-            }
-          ],
-          "thresholds": [
-            {"label": "Expert", "min_percent": 80, "message": "Outstanding mastery!"},
-            {"label": "Proficient", "min_percent": 60, "message": "Good understanding"},
-            {"label": "Learning", "min_percent": 0, "message": "Keep practicing"}
-          ]
-        }
-
-   B. CLASSIFICATION LAB:
-      - Define 3-4 clear, distinct categories
-      - Provide 8-12 items to classify
-      - Include hints for challenging items
-      - Ensure items have one correct category
-      - Example structure:
-        {
-          "categories": [
-            {"name": "Variables", "emoji": "📦", "description": "Store data values"},
-            {"name": "Functions", "emoji": "⚙️", "description": "Reusable code blocks"}
-          ],
-          "items": [
-            {"name": "let x = 5", "correct_category": "Variables", "hint": "Stores a number"},
-            {"name": "function sum()", "correct_category": "Functions", "hint": "Performs a calculation"}
-          ]
-        }
-
-3. QUIZ REQUIREMENTS:
-   - 3-5 multiple choice questions per module
-   - Test understanding, not memorization
-   - Include explanations for correct answers
-   - Avoid trick questions
-   - Progressive difficulty within quiz
-
-4. COURSE STRUCTURE:
-   - Create as many modules as needed (typically 4-8)
-   - Each module builds on previous knowledge
-   - Start with foundations, end with advanced concepts
-   - Include practical, scenario-driven examples
-
-SIMULATION LAB REQUIREMENTS (CRITICAL):
-- NEVER use "effects" - ONLY use "set_state"
-- set_state must include ALL parameters
-- Values must be integers 0-100
-- Each choice should modify at least 2 parameters
-- Changes should feel realistic and meaningful
-
-Return clean, structured JSON via the function tool with NO extra commentary.
-`,
+1. EVERY MODULE MUST INCLUDE A LAB.
+2. Labs must appear in EVERY module (not just the last one).
+3. For simulation labs:
+   - Use ONLY "set_state"
+   - set_state MUST include ALL parameters
+   - All values must be integers 0-100
+   - Each choice must modify at least 2 parameters
+4. Lesson must have EXACTLY 4 slides separated by "\\n---\\n"
+5. No commentary outside JSON.
+6. Return only valid JSON.
+              `,
           },
           {
             role: "user",
-            content: `Create a structured course on "${topic}" with as many modules as necessary to fully teach the subject from foundational concepts to advanced understanding. Each module must include: (1) a lesson broken into exactly four concise slides separated by "\\n---\\n", written clearly for high school students, (2) one interactive lab that is either a decision-based simulation (with adjustable parameters, realistic scenarios, measurable outcomes, and logical cause-and-effect relationships) or a classification activity (with clear categories and accurate sortable examples), and (3) a short quiz with 3-5 multiple choice questions that test understanding rather than memorization. Lessons should build progressively in difficulty, labs must feel practical and scenario-driven, and all content must remain logically consistent and realistic.`
+            content: `Create a complete course on "${topic}" with 4-6 modules. 
+Each module must include:
+- Lesson (4 slides)
+- One lab
+- 3-5 question quiz
+
+Make difficulty progressive.`,
           },
         ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "create_course",
-              parameters: {
-                type: "object",
-                properties: {
-                  title: { type: "string" },
-                  description: { type: "string" },
-                  modules: { type: "array" },
-                },
-                required: ["title", "description", "modules"],
-              },
-            },
-          },
-        ],
-        tool_choice: "auto",
       }),
     });
 
@@ -207,20 +128,54 @@ Return clean, structured JSON via the function tool with NO extra commentary.
       throw new Error("Empty AI response");
     }
 
-    const message = aiData.choices[0].message;
-    const toolCall = message?.tool_calls?.[0];
+    const content = aiData.choices[0].message.content;
 
-    if (!toolCall) {
-      throw new Error("No function call returned by AI");
-    }
+    /* ===============================
+       PARSE JSON
+    ================================= */
+    const parsed = JSON.parse(content);
 
-    // 🔥 PARSE RAW JSON
-    const parsed = JSON.parse(toolCall.function.arguments);
-
-    // 🔒 VALIDATE STRUCTURE (THIS IS THE NEW PART)
+    /* ===============================
+       VALIDATE STRUCTURE
+    ================================= */
     const courseData = CourseSchema.parse(parsed);
 
-    // If validation passes, continue safely
+    /* ===============================
+       REPAIR LABS (CRITICAL FIX)
+    ================================= */
+    courseData.modules.forEach((mod: any) => {
+      if (!mod.lab_type) {
+        mod.lab_type = "classification";
+      }
+
+      if (!mod.lab_data) {
+        mod.lab_data = {};
+      }
+
+      if (mod.lab_type === "simulation") {
+        const parameters = mod.lab_data.parameters || [];
+
+        mod.lab_data.decisions?.forEach((decision: any) => {
+          decision.choices?.forEach((choice: any) => {
+            if (!choice.set_state) {
+              choice.set_state = {};
+            }
+
+            parameters.forEach((p: any) => {
+              if (choice.set_state[p.name] === undefined) {
+                choice.set_state[p.name] = 50;
+              }
+
+              choice.set_state[p.name] = Math.max(0, Math.min(100, Math.round(choice.set_state[p.name])));
+            });
+          });
+        });
+      }
+    });
+
+    /* ===============================
+       UPDATE COURSE
+    ================================= */
     await supabase
       .from("courses")
       .update({
@@ -231,34 +186,19 @@ Return clean, structured JSON via the function tool with NO extra commentary.
       .eq("id", course.id);
 
     /* ===============================
-       🔥 POST PROCESSING (YOUR LOGIC)
+       INSERT MODULES
     ================================= */
-
-    const modules = courseData.modules.map((mod: any, index: number) => {
-      let lessonContent = mod.lesson_content || "";
-
-      // Force slide separators
-      if (!lessonContent.includes("\n---\n")) {
-        const sections = lessonContent.split(/(?=^## )/m).filter(Boolean);
-        if (sections.length > 1) {
-          lessonContent = sections.join("\n\n---\n\n");
-        }
-      }
-
-      return {
-        course_id: course.id,
-        module_order: index + 1,
-        title: mod.title,
-        lesson_content: lessonContent,
-        youtube_url: `https://www.youtube.com/results?search_query=${encodeURIComponent(
-          mod.youtube_query || mod.title,
-        )}`,
-        youtube_title: mod.youtube_title || mod.title,
-        lab_type: mod.lab_type,
-        lab_data: mod.lab_data,
-        quiz: mod.quiz,
-      };
-    });
+    const modules = courseData.modules.map((mod: any, index: number) => ({
+      course_id: course.id,
+      module_order: index + 1,
+      title: mod.title,
+      lesson_content: mod.lesson_content,
+      youtube_url: `https://www.youtube.com/results?search_query=${encodeURIComponent(mod.youtube_query || mod.title)}`,
+      youtube_title: mod.youtube_title || mod.title,
+      lab_type: mod.lab_type,
+      lab_data: mod.lab_data,
+      quiz: mod.quiz,
+    }));
 
     await supabase.from("course_modules").insert(modules);
 
