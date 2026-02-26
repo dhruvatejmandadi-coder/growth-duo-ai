@@ -1,26 +1,45 @@
+# Fix Fallback Parameters and Update Plan
 
+## The Problem
 
-# Simulation Labs — Set-State Model (IMPLEMENTED)
+The current fallback parameters use "Factor A/B/C" which are generic and meaningless. Using `${mod.title} Factor 1` would produce something like "Introduction to Economics Factor 1" -- still not real topic-specific names like "Inflation" or "GDP Growth".
 
-## Summary
-Decision choices set sliders to exact values (0-100) instead of adding/subtracting deltas. Slider parameter names are **topic-specific** — generated dynamically based on the course subject (e.g. "GDP Growth" for economics, "Cell Health" for biology). Never generic names like "Understanding" or "Confidence".
+The AI prompt already instructs the model to generate domain-specific parameter names. This fallback only triggers when the AI completely fails to produce parameters, which is rare.
 
-## Architecture
+## The Fix
 
-### Frontend: `src/components/labs/InteractiveLab.tsx`
-- `ensureDecisionSetState()` converts any legacy `effects` data to absolute `set_state` values
-- `handleDecision()` sets sliders to exact values from `choice.set_state`, clamped 0-100
-- Parameters not in `set_state` keep their current value
+### 1. `.lovable/plan.md` -- Full Rewrite
 
-### Backend: `supabase/functions/generate-course/index.ts`
-- AI prompt explicitly requires **topic-relevant** parameter names (not generic)
-- Prompt enforces `set_state` format with all parameters mapped to 0-100 integers
-- `repairModules()` post-processor fixes missing fields, converts legacy `effects` → `set_state`, fills missing params with 50
-- Forced tool_choice ensures structured output
-- Zod validation catches malformed data
+Replace with the comprehensive topic-based state model document provided earlier, covering:
 
-## Key Rules
-1. Parameter names must match the course domain (never "Understanding/Application/Confidence")
-2. Every choice must have `set_state` with ALL slider names → integer 0-100
-3. 3 parameters per simulation, 2-3 decisions with 2 choices each
-4. Frontend backward-compatible with old `effects`-based courses
+- Core principles (deterministic, topic-driven, strict structure)
+- Simulation schema with parameter and decision formats
+- AI generation rules (derive 3-5 topic variables, no abstract metrics)
+- Backend validation and frontend assumptions
+- Example topics (Physics, Cybersecurity, Climate Policy)
+
+### 2. `supabase/functions/generate-course/index.ts` -- Fallback Parameters (lines 81-85)
+
+Replace "Factor A/B/C" with module-title-derived names that at least give context:
+
+```
+ld.parameters = [
+  { name: `${mod.title} Variable 1`, ... default: 0 },
+  { name: `${mod.title} Variable 2`, ... default: 0 },
+  { name: `${mod.title} Variable 3`, ... default: 0 },
+];
+```
+
+This is a last-resort fallback. In practice, the AI generates proper names like "Inflation", "GDP Growth", etc. from the prompt instructions. The fallback only fires if the AI returns no parameters at all. It won't show truly meaningful names because the backend can't intelligently derive domain variables without AI -- but it will at least include the module title for context.
+
+### 3. Error Handling Improvement (catch block, ~line 366)
+
+Detect Zod validation errors and return a cleaner user-facing message instead of dumping the raw JSON issues array.
+
+## Important Note
+
+The **real** topic-specific slider names come from the AI generation prompt, which already has strict rules like:
+
+> "Parameter names MUST be relevant to the course topic (e.g. for Economics: GDP Growth, Inflation Rate, Employment)"
+
+The fallback is just a safety net. If the AI is consistently producing generic names, the fix is in the prompt wording, not the fallback -- and the current prompt already handles this correctly.
