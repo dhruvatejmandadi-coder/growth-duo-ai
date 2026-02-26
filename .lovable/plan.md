@@ -1,45 +1,127 @@
-# Fix Fallback Parameters and Update Plan
+# Simulation Lab Architecture – Topic-Based State Model
 
-## The Problem
+## Overview
 
-The current fallback parameters use "Factor A/B/C" which are generic and meaningless. Using `${mod.title} Factor 1` would produce something like "Introduction to Economics Factor 1" -- still not real topic-specific names like "Inflation" or "GDP Growth".
+Simulation labs use a deterministic `set_state` model.
+Each decision sets topic-specific sliders to exact values (0–100).
+This is NOT based on learner understanding, application, or confidence.
+Sliders represent variables intrinsic to the topic being simulated.
 
-The AI prompt already instructs the model to generate domain-specific parameter names. This fallback only triggers when the AI completely fails to produce parameters, which is rare.
+---
 
-## The Fix
+## Core Principles
 
-### 1. `.lovable/plan.md` -- Full Rewrite
+1. **Deterministic**
+   - No deltas.
+   - No additive effects.
+   - Each decision sets the full state snapshot.
 
-Replace with the comprehensive topic-based state model document provided earlier, covering:
+2. **Topic-Driven**
+   - Slider names are derived from the course topic.
+   - Example:
+     - Economics → Inflation, Employment, GDP
+     - Biology → Population, Resources, Predators
+     - Programming → Performance, Readability, Memory Usage
 
-- Core principles (deterministic, topic-driven, strict structure)
-- Simulation schema with parameter and decision formats
-- AI generation rules (derive 3-5 topic variables, no abstract metrics)
-- Backend validation and frontend assumptions
-- Example topics (Physics, Cybersecurity, Climate Policy)
+3. **Strict Structure**
+   - Every choice must include `set_state`.
+   - `set_state` must define ALL sliders.
+   - Values must be integers 0–100.
+   - At least 2 sliders must change per choice.
 
-### 2. `supabase/functions/generate-course/index.ts` -- Fallback Parameters (lines 81-85)
+---
 
-Replace "Factor A/B/C" with module-title-derived names that at least give context:
+## Simulation Lab Schema
 
+Each simulation module must include:
+- `parameters`: array of sliders
+- `decisions`: array of decision scenarios
+
+### Parameter Format
+
+```json
+{
+  "name": "Inflation",
+  "default": 50
+}
 ```
-ld.parameters = [
-  { name: `${mod.title} Variable 1`, ... default: 0 },
-  { name: `${mod.title} Variable 2`, ... default: 0 },
-  { name: `${mod.title} Variable 3`, ... default: 0 },
-];
+
+### Decision Format
+
+```json
+{
+  "prompt": "You increase interest rates.",
+  "choices": [
+    {
+      "text": "Raise rates aggressively",
+      "explanation": "This slows spending but stabilizes inflation.",
+      "set_state": {
+        "Inflation": 40,
+        "Employment": 45,
+        "GDP": 55
+      }
+    }
+  ]
+}
 ```
 
-This is a last-resort fallback. In practice, the AI generates proper names like "Inflation", "GDP Growth", etc. from the prompt instructions. The fallback only fires if the AI returns no parameters at all. It won't show truly meaningful names because the backend can't intelligently derive domain variables without AI -- but it will at least include the module title for context.
+---
 
-### 3. Error Handling Improvement (catch block, ~line 366)
+## AI Generation Rules
 
-Detect Zod validation errors and return a cleaner user-facing message instead of dumping the raw JSON issues array.
+When generating a simulation lab:
 
-## Important Note
+- Derive 3–5 meaningful topic variables.
+- Each variable must represent a measurable system dimension.
+- **Avoid** abstract learning metrics (e.g., Understanding, Confidence).
+- Decisions must reflect realistic cause-and-effect within the topic domain.
+- All choices must:
+  - Include `set_state`
+  - Set ALL sliders
+  - Use integer values 0–100
 
-The **real** topic-specific slider names come from the AI generation prompt, which already has strict rules like:
+---
 
-> "Parameter names MUST be relevant to the course topic (e.g. for Economics: GDP Growth, Inflation Rate, Employment)"
+## Backend Validation
 
-The fallback is just a safety net. If the AI is consistently producing generic names, the fix is in the prompt wording, not the fallback -- and the current prompt already handles this correctly.
+Before Zod validation:
+- Ensure `lab_type === "simulation"` includes `parameters` + `decisions`.
+- If a choice is missing `set_state`, generation fails.
+- If a slider is missing from `set_state`, generation fails.
+- Clamp values 0–100.
+- No legacy `effects` support.
+
+---
+
+## Frontend Assumptions
+
+Frontend expects:
+- Fully populated `set_state`
+- Complete slider coverage
+- No partial states
+- No deltas
+- If a slider is missing, throw error.
+
+---
+
+## Example Topics
+
+### Physics – Projectile Motion
+Sliders: Velocity, Angle, Air Resistance
+
+### Cybersecurity – Network Defense
+Sliders: Vulnerability, Detection Speed, System Stability
+
+### Climate Policy
+Sliders: Carbon Emissions, Economic Output, Public Approval
+
+---
+
+## Why This Model
+
+Topic-based sliders:
+- Make labs feel real.
+- Improve immersion.
+- Create logical cause-and-effect.
+- Avoid artificial "learning score" gamification.
+- Produce consistent deterministic behavior.

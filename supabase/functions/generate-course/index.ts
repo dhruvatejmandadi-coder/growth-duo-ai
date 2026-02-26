@@ -79,9 +79,9 @@ function repairModules(parsed: any) {
       // Ensure parameters exist
       if (!ld.parameters || !Array.isArray(ld.parameters) || ld.parameters.length === 0) {
         ld.parameters = [
-          { name: "Factor A", icon: "📊", unit: "%", min: 0, max: 100, default: 50 },
-          { name: "Factor B", icon: "📈", unit: "%", min: 0, max: 100, default: 50 },
-          { name: "Factor C", icon: "📉", unit: "%", min: 0, max: 100, default: 50 },
+          { name: `${mod.title} Variable 1`, icon: "📊", unit: "%", min: 0, max: 100, default: 50 },
+          { name: `${mod.title} Variable 2`, icon: "📈", unit: "%", min: 0, max: 100, default: 50 },
+          { name: `${mod.title} Variable 3`, icon: "📉", unit: "%", min: 0, max: 100, default: 50 },
         ];
       }
 
@@ -366,11 +366,19 @@ Generate 4-6 modules. Mix simulation and classification labs across modules.`,
   } catch (error) {
     console.error("COURSE GENERATION ERROR:", error);
 
+    if (error instanceof z.ZodError) {
+      console.error("ZOD VALIDATION DETAILS:", JSON.stringify(error.issues, null, 2));
+      return new Response(
+        JSON.stringify({ error: "Course generation produced invalid data. Please try again." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : "Unknown error",
       }),
-      { status: 500, headers: corsHeaders },
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
