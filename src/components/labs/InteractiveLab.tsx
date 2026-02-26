@@ -15,6 +15,7 @@ type Parameter = {
   min: number;
   max: number;
   default: number;
+  weight?: number; // NEW: weighted impact
   description?: string;
 };
 
@@ -25,7 +26,7 @@ type Decision = {
     text: string;
     explanation?: string;
     set_state: Record<string, number>;
-    effects?: Record<string, number>; // legacy backward compat
+    effects?: Record<string, number>; // legacy support
   }[];
 };
 
@@ -48,49 +49,29 @@ type Props = {
 
 function getParamLevel(value: number, min: number, max: number) {
   const pct = ((value - min) / (max - min)) * 100;
-
   if (pct >= 75) return { level: "high", color: "text-green-500", icon: TrendingUp };
   if (pct >= 35) return { level: "mid", color: "text-yellow-500", icon: Minus };
-
   return { level: "low", color: "text-red-500", icon: TrendingDown };
 }
 
-/* ================= AUTO-FIX: CONVERT TO SET_STATE ================= */
+/* ================= ENSURE SET_STATE ================= */
 
 function ensureDecisionSetState(decisions: Decision[], parameters: Parameter[]): Decision[] {
   if (!decisions?.length || !parameters?.length) return decisions ?? [];
 
   return decisions.map((decision) => ({
     ...decision,
-    choices: decision.choices.map((choice, index) => {
-      // Already has valid set_state
-      if (choice.set_state && Object.keys(choice.set_state).length > 0) {
-        // Ensure ALL parameters are present, fill missing with 50
-        const filled: Record<string, number> = {};
-        for (const p of parameters) {
-          filled[p.name] = Math.max(0, Math.min(100, choice.set_state[p.name] ?? 50));
-        }
-        return { ...choice, set_state: filled };
-      }
+    choices: decision.choices.map((choice) => {
+      const filled: Record<string, number> = {};
 
-      // Legacy: convert effects (deltas) to absolute set_state
-      if (choice.effects && Object.keys(choice.effects).length > 0) {
-        const setState: Record<string, number> = {};
-        for (const p of parameters) {
-          const delta = choice.effects[p.name] ?? 0;
-          setState[p.name] = Math.max(0, Math.min(100, p.default + delta));
-        }
-        return { ...choice, set_state: setState };
-      }
-
-      // No data at all: generate defaults
-      const setState: Record<string, number> = {};
       for (const p of parameters) {
-        const base = p.default ?? 50;
-        const offset = (index % 2 === 0 ? 1 : -1) * 15;
-        setState[p.name] = Math.max(0, Math.min(100, base + offset));
+        const raw =
+          choice.set_state?.[p.name] ?? (choice.effects ? p.default + (choice.effects[p.name] ?? 0) : p.default);
+
+        filled[p.name] = Math.max(p.min, Math.min(p.max, raw ?? p.default));
       }
-      return { ...choice, set_state: setState };
+
+      return { ...choice, set_state: filled };
     }),
   }));
 }
@@ -101,7 +82,6 @@ function SimulationLabInline({ data }: { data: SimulationData }) {
   const parameters = useMemo(() => data.parameters ?? [], [data]);
   const thresholds = useMemo(() => data.thresholds ?? [], [data]);
   const rawDecisions = useMemo(() => data.decisions ?? [], [data]);
-
   const decisions = useMemo(() => ensureDecisionSetState(rawDecisions, parameters), [rawDecisions, parameters]);
 
   const [values, setValues] = useState<Record<string, number>>({});
@@ -111,34 +91,34 @@ function SimulationLabInline({ data }: { data: SimulationData }) {
   /* RESET WHEN LAB CHANGES */
   useEffect(() => {
     const initial = Object.fromEntries(parameters.map((p) => [p.name, p.default]));
-
     setValues(initial);
     setCurrentDecision(0);
     setAnswered({});
   }, [data, parameters]);
 
-  /* ================= OUTCOME ================= */
+  /* ================= WEIGHTED TOTAL ================= */
 
   const totalPercent = useMemo(() => {
     if (!parameters.length) return 0;
 
-    const total = parameters.reduce((sum, p) => {
-      const pct = ((values[p.name] ?? p.default) - p.min) / (p.max - p.min);
-      return sum + pct;
+    const totalWeight = parameters.reduce((sum, p) => sum + (p.weight ?? 1), 0);
+
+    const weightedScore = parameters.reduce((sum, p) => {
+      const normalized = ((values[p.name] ?? p.default) - p.min) / (p.max - p.min);
+
+      return sum + normalized * (p.weight ?? 1);
     }, 0);
 
-    return Math.round((total / parameters.length) * 100);
+    return Math.round((weightedScore / totalWeight) * 100);
   }, [values, parameters]);
 
   const threshold = useMemo(() => {
     if (!thresholds.length) return null;
-
     const sorted = [...thresholds].sort((a, b) => b.min_percent - a.min_percent);
-
     return sorted.find((t) => totalPercent >= t.min_percent) || sorted[sorted.length - 1];
   }, [totalPercent, thresholds]);
 
-  /* ================= DECISION CLICK ================= */
+  /* ================= DECISION HANDLER ================= */
 
   const handleDecision = (dIdx: number, cIdx: number) => {
     if (answered[dIdx] !== undefined) return;
@@ -147,25 +127,59 @@ function SimulationLabInline({ data }: { data: SimulationData }) {
     if (!choice) return;
 
     setValues((prev) => {
-      const next = { ...prev };
-      const setState = choice.set_state || {};
+      const next: Record<string, number> = {};
       for (const p of parameters) {
-        next[p.name] = Math.max(0, Math.min(100, setState[p.name] ?? prev[p.name] ?? p.default));
+        next[p.name] = Math.max(p.min, Math.min(p.max, choice.set_state[p.name] ?? prev[p.name] ?? p.default));
       }
       return next;
     });
 
     setAnswered((prev) => ({ ...prev, [dIdx]: cIdx }));
+
+    // Auto-advance scenario
+    setTimeout(() => {
+      setCurrentDecision((prev) => prev + 1);
+    }, 600);
   };
 
-  const allDone = decisions.length > 0 && Object.keys(answered).length === decisions.length;
+  const allDone = currentDecision >= decisions.length;
+
+  /* ================= API CALLBACK ================= */
+
+  useEffect(() => {
+    if (!parameters.length) return;
+
+    const controller = new AbortController();
+
+    const syncState = async () => {
+      try {
+        await fetch("/api/simulation/update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            values,
+            totalPercent,
+            scenario: currentDecision,
+          }),
+          signal: controller.signal,
+        });
+      } catch (err) {
+        if ((err as any).name !== "AbortError") {
+          console.error("Simulation sync failed:", err);
+        }
+      }
+    };
+
+    syncState();
+    return () => controller.abort();
+  }, [values, totalPercent, currentDecision, parameters]);
 
   /* ================= UI ================= */
 
   return (
     <div className="space-y-5">
-      {/* DECISIONS */}
-      {decisions.length > 0 && !allDone && currentDecision < decisions.length && (
+      {/* SCENARIOS */}
+      {decisions.length > 0 && !allDone && (
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="p-5 space-y-4">
             <div className="flex items-center gap-2">
@@ -196,12 +210,6 @@ function SimulationLabInline({ data }: { data: SimulationData }) {
                 </button>
               );
             })}
-
-            {answered[currentDecision] !== undefined && currentDecision < decisions.length - 1 && (
-              <Button size="sm" variant="outline" onClick={() => setCurrentDecision((prev) => prev + 1)}>
-                Next →
-              </Button>
-            )}
           </CardContent>
         </Card>
       )}
@@ -219,7 +227,6 @@ function SimulationLabInline({ data }: { data: SimulationData }) {
                   <span>{p.icon}</span>
                   <span>{p.name}</span>
                 </div>
-
                 <div className="flex items-center gap-2">
                   <Icon className={`w-4 h-4 ${color}`} />
                   <Badge variant="outline">
@@ -264,37 +271,16 @@ function SimulationLabInline({ data }: { data: SimulationData }) {
   );
 }
 
-/* ================= EMPTY STATE ================= */
-
-function LabEmptyState({ labType }: { labType?: string | null }) {
-  return (
-    <Card className="border-dashed border-2 border-muted-foreground/20">
-      <CardContent className="p-8 text-center space-y-3">
-        <div className="text-4xl">🔬</div>
-        <h3 className="font-bold text-lg">Lab Data Unavailable</h3>
-        <p className="text-sm text-muted-foreground max-w-md mx-auto">
-          The {labType === "classification" ? "classification" : "simulation"} lab for this module wasn't generated
-          properly. Try regenerating the course to get interactive labs with scenarios and parameters.
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
-
 /* ================= MAIN ================= */
 
 export default function InteractiveLab({ labType, labData, labTitle, labDescription }: Props) {
-  if (!labData || (typeof labData === "object" && Object.keys(labData).length === 0)) {
-    return <LabEmptyState labType={labType} />;
+  if (!labData || Object.keys(labData).length === 0) {
+    return null;
   }
 
   if (labType === "classification") {
-    const hasClassificationData = labData?.items?.length > 0 && labData?.categories?.length > 0;
-    if (!hasClassificationData) return <LabEmptyState labType={labType} />;
     return <ClassificationLab data={labData} />;
   }
 
-  const hasSimulationData = labData?.parameters?.length > 0;
-  if (!hasSimulationData) return <LabEmptyState labType={labType} />;
   return <SimulationLabInline data={labData} />;
 }
