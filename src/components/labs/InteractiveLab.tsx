@@ -62,33 +62,24 @@ function ensureDecisionSetState(decisions: Decision[], parameters: Parameter[]):
 
   return decisions.map((decision) => ({
     ...decision,
-    choices: decision.choices.map((choice, index) => {
-      // Already has valid set_state
+    choices: decision.choices.map((choice) => {
       if (choice.set_state && Object.keys(choice.set_state).length > 0) {
-        // Ensure ALL parameters are present, fill missing with 50
+        // Validate: ALL parameters must be present
         const filled: Record<string, number> = {};
         for (const p of parameters) {
+          if (typeof choice.set_state[p.name] !== "number") {
+            console.error(`[SimLab] Missing slider "${p.name}" in set_state. Defaulting to 50.`);
+          }
           filled[p.name] = Math.max(0, Math.min(100, choice.set_state[p.name] ?? 50));
         }
         return { ...choice, set_state: filled };
       }
 
-      // Legacy: convert effects (deltas) to absolute set_state
-      if (choice.effects && Object.keys(choice.effects).length > 0) {
-        const setState: Record<string, number> = {};
-        for (const p of parameters) {
-          const delta = choice.effects[p.name] ?? 0;
-          setState[p.name] = Math.max(0, Math.min(100, p.default + delta));
-        }
-        return { ...choice, set_state: setState };
-      }
-
-      // No data at all: generate defaults
+      // No valid set_state — this is an error per architecture
+      console.error("[SimLab] Choice missing set_state entirely:", choice.text);
       const setState: Record<string, number> = {};
       for (const p of parameters) {
-        const base = p.default ?? 50;
-        const offset = (index % 2 === 0 ? 1 : -1) * 15;
-        setState[p.name] = Math.max(0, Math.min(100, base + offset));
+        setState[p.name] = p.default ?? 50;
       }
       return { ...choice, set_state: setState };
     }),
