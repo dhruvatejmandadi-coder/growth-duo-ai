@@ -35,6 +35,240 @@ const CourseSchema = z.object({
 });
 
 /* ===============================
+   🔧 VALIDATORS
+================================ */
+
+function isValidSimulation(ld: any): boolean {
+  if (!ld || typeof ld !== "object") return false;
+  if (!Array.isArray(ld.parameters) || ld.parameters.length !== 3) return false;
+  for (const p of ld.parameters) {
+    if (typeof p.name !== "string" || typeof p.min !== "number" || typeof p.max !== "number" || typeof p.default !== "number") return false;
+  }
+  if (!Array.isArray(ld.thresholds) || ld.thresholds.length !== 3) return false;
+  if (!Array.isArray(ld.decisions) || ld.decisions.length < 2) return false;
+  const paramNames = ld.parameters.map((p: any) => p.name);
+  for (const d of ld.decisions) {
+    if (!Array.isArray(d.choices)) return false;
+    for (const c of d.choices) {
+      if (!c.set_state || typeof c.set_state !== "object") return false;
+      for (const pn of paramNames) {
+        if (typeof c.set_state[pn] !== "number") return false;
+      }
+    }
+  }
+  return true;
+}
+
+function isValidClassification(ld: any): boolean {
+  if (!ld || typeof ld !== "object") return false;
+  if (!Array.isArray(ld.categories) || ld.categories.length < 3) return false;
+  for (const cat of ld.categories) {
+    if (typeof cat.name !== "string") return false;
+  }
+  if (!Array.isArray(ld.items) || ld.items.length < 5) return false;
+  for (const item of ld.items) {
+    const content = item.content || item.name;
+    const category = item.correctCategory || item.correct_category;
+    if (typeof content !== "string" || typeof category !== "string") return false;
+  }
+  return true;
+}
+
+function isValidPolicyOptimization(ld: any): boolean {
+  if (!ld || typeof ld !== "object") return false;
+  if (!Array.isArray(ld.parameters) || ld.parameters.length < 3) return false;
+  for (const p of ld.parameters) {
+    if (typeof p.name !== "string" || typeof p.min !== "number" || typeof p.max !== "number" || typeof p.default !== "number") return false;
+  }
+  if (!Array.isArray(ld.constraints) || ld.constraints.length < 2) return false;
+  for (const c of ld.constraints) {
+    if (typeof c.parameter !== "string" || typeof c.operator !== "string" || typeof c.value !== "number" || typeof c.label !== "string") return false;
+  }
+  if (typeof ld.max_decisions !== "number") return false;
+  if (!Array.isArray(ld.decisions) || ld.decisions.length < 2) return false;
+  const paramNames = ld.parameters.map((p: any) => p.name);
+  for (const d of ld.decisions) {
+    if (!Array.isArray(d.choices)) return false;
+    for (const ch of d.choices) {
+      if (!ch.set_state || typeof ch.set_state !== "object") return false;
+      for (const pn of paramNames) {
+        if (typeof ch.set_state[pn] !== "number") return false;
+      }
+    }
+  }
+  return true;
+}
+
+function isValidEthicalDilemma(ld: any): boolean {
+  if (!ld || typeof ld !== "object") return false;
+  if (!Array.isArray(ld.dimensions) || ld.dimensions.length < 3) return false;
+  for (const dim of ld.dimensions) {
+    if (typeof dim.name !== "string" || typeof dim.icon !== "string" || typeof dim.description !== "string") return false;
+  }
+  if (!Array.isArray(ld.decisions) || ld.decisions.length < 3) return false;
+  const dimNames = ld.dimensions.map((d: any) => d.name);
+  for (const d of ld.decisions) {
+    if (!Array.isArray(d.choices)) return false;
+    for (const c of d.choices) {
+      if (!c.impacts || typeof c.impacts !== "object") return false;
+      for (const dn of dimNames) {
+        if (typeof c.impacts[dn] !== "number") return false;
+      }
+    }
+  }
+  return true;
+}
+
+/* ===============================
+   🔧 FALLBACK GENERATORS
+================================ */
+
+function generateSimulationFallback(title: string) {
+  const t = title || "Topic";
+  const p1 = `${t} Efficiency`;
+  const p2 = `${t} Quality`;
+  const p3 = `${t} Sustainability`;
+  return {
+    parameters: [
+      { name: p1, icon: "📊", unit: "%", min: 0, max: 100, default: 50 },
+      { name: p2, icon: "📈", unit: "%", min: 0, max: 100, default: 50 },
+      { name: p3, icon: "📉", unit: "%", min: 0, max: 100, default: 50 },
+    ],
+    thresholds: [
+      { label: "Excellent", min_percent: 75, message: "Outstanding performance across all factors." },
+      { label: "Good", min_percent: 50, message: "Solid results with room for improvement." },
+      { label: "Needs Work", min_percent: 0, message: "Consider revisiting your approach." },
+    ],
+    decisions: [
+      {
+        question: `How would you approach improving ${t.toLowerCase()} outcomes?`,
+        emoji: "🔬",
+        choices: [
+          { text: "Prioritize efficiency", explanation: `Focuses resources on maximizing ${t.toLowerCase()} throughput at the cost of long-term viability.`, set_state: { [p1]: 80, [p2]: 45, [p3]: 40 } },
+          { text: "Balanced approach", explanation: `Spreads effort evenly across all dimensions of ${t.toLowerCase()}.`, set_state: { [p1]: 60, [p2]: 60, [p3]: 55 } },
+        ],
+      },
+      {
+        question: `A challenge arises in ${t.toLowerCase()}. What's your response?`,
+        emoji: "⚡",
+        choices: [
+          { text: "Invest in quality", explanation: `Improving quality standards strengthens long-term ${t.toLowerCase()} outcomes.`, set_state: { [p1]: 50, [p2]: 85, [p3]: 60 } },
+          { text: "Focus on sustainability", explanation: `Sustainable practices ensure ${t.toLowerCase()} remains viable over time.`, set_state: { [p1]: 45, [p2]: 55, [p3]: 80 } },
+        ],
+      },
+    ],
+  };
+}
+
+function generateClassificationFallback(title: string) {
+  const t = title || "Topic";
+  const cats = [
+    { name: "Core Concepts", description: `Fundamental principles of ${t.toLowerCase()}`, color: "#4CAF50" },
+    { name: "Supporting Factors", description: `Elements that contribute to ${t.toLowerCase()}`, color: "#2196F3" },
+    { name: "Common Misconceptions", description: `Frequent misunderstandings about ${t.toLowerCase()}`, color: "#FF9800" },
+  ];
+  return {
+    title: `${t} Classification`,
+    description: `Categorize the following items related to ${t.toLowerCase()} into the correct groups.`,
+    categories: cats,
+    items: [
+      { content: `Primary principle of ${t.toLowerCase()}`, correctCategory: "Core Concepts", explanation: "This is a foundational element." },
+      { content: `Key theory behind ${t.toLowerCase()}`, correctCategory: "Core Concepts", explanation: "This forms the theoretical basis." },
+      { content: `Resource that enables ${t.toLowerCase()}`, correctCategory: "Supporting Factors", explanation: "This supports but isn't central." },
+      { content: `Tool commonly used in ${t.toLowerCase()}`, correctCategory: "Supporting Factors", explanation: "This is a supporting mechanism." },
+      { content: `"${t} always works the same way"`, correctCategory: "Common Misconceptions", explanation: "This oversimplifies the reality." },
+      { content: `"${t} has no tradeoffs"`, correctCategory: "Common Misconceptions", explanation: "Every system involves tradeoffs." },
+    ],
+  };
+}
+
+function generatePolicyOptimizationFallback(title: string) {
+  const t = title || "Topic";
+  const p1 = `${t} Performance`;
+  const p2 = `${t} Cost`;
+  const p3 = `${t} Risk`;
+  return {
+    title: `${t} Optimization`,
+    description: `Optimize ${t.toLowerCase()} outcomes within the given constraints.`,
+    parameters: [
+      { name: p1, icon: "🎯", unit: "%", min: 0, max: 100, default: 50 },
+      { name: p2, icon: "💰", unit: "%", min: 0, max: 100, default: 50 },
+      { name: p3, icon: "⚠️", unit: "%", min: 0, max: 100, default: 50 },
+    ],
+    constraints: [
+      { parameter: p1, operator: ">", value: 60, label: `Keep ${t} performance above 60%` },
+      { parameter: p3, operator: "<", value: 40, label: `Keep ${t} risk below 40%` },
+    ],
+    max_decisions: 3,
+    decisions: [
+      {
+        question: `How do you allocate resources for ${t.toLowerCase()}?`,
+        emoji: "🎯",
+        choices: [
+          { text: "Aggressive investment", explanation: "High performance but increased costs and risk.", set_state: { [p1]: 85, [p2]: 75, [p3]: 60 } },
+          { text: "Conservative strategy", explanation: "Lower risk but moderate performance gains.", set_state: { [p1]: 60, [p2]: 40, [p3]: 30 } },
+        ],
+      },
+      {
+        question: `A new opportunity emerges in ${t.toLowerCase()}. How do you respond?`,
+        emoji: "💡",
+        choices: [
+          { text: "Seize the opportunity", explanation: "Potential for high reward but with elevated risk.", set_state: { [p1]: 80, [p2]: 65, [p3]: 55 } },
+          { text: "Evaluate carefully", explanation: "Measured approach that maintains stability.", set_state: { [p1]: 65, [p2]: 50, [p3]: 35 } },
+        ],
+      },
+    ],
+  };
+}
+
+function generateEthicalDilemmaFallback(title: string) {
+  const t = title || "Topic";
+  const dims = [
+    { name: "Effectiveness", icon: "🎯", description: `How well ${t.toLowerCase()} achieves its goals` },
+    { name: "Fairness", icon: "⚖️", description: `How equitably ${t.toLowerCase()} impacts stakeholders` },
+    { name: "Sustainability", icon: "🌱", description: `Long-term viability of ${t.toLowerCase()} decisions` },
+  ];
+  const dn = dims.map(d => d.name);
+  // Rotating tradeoff pattern
+  const patterns = [
+    [{ [dn[0]]: 15, [dn[1]]: -10, [dn[2]]: 0 }, { [dn[0]]: -10, [dn[1]]: 15, [dn[2]]: 0 }],
+    [{ [dn[0]]: 0, [dn[1]]: 15, [dn[2]]: -10 }, { [dn[0]]: 0, [dn[1]]: -10, [dn[2]]: 15 }],
+    [{ [dn[0]]: -10, [dn[1]]: 0, [dn[2]]: 15 }, { [dn[0]]: 15, [dn[1]]: 0, [dn[2]]: -10 }],
+  ];
+  return {
+    title: `${t} Ethical Dilemma`,
+    description: `Navigate ethical tradeoffs in ${t.toLowerCase()}. Every choice has consequences.`,
+    dimensions: dims,
+    decisions: [
+      {
+        question: `${t} can be optimized for results or fairness. What do you prioritize?`,
+        emoji: "⚖️",
+        choices: [
+          { text: "Maximize results", explanation: "Achieves goals but may disadvantage some stakeholders.", impacts: patterns[0][0] },
+          { text: "Ensure fairness", explanation: "Equitable outcomes but potentially less efficient.", impacts: patterns[0][1] },
+        ],
+      },
+      {
+        question: `A shortcut in ${t.toLowerCase()} saves time but raises concerns. Your call?`,
+        emoji: "🤔",
+        choices: [
+          { text: "Take the shortcut", explanation: "Quick gains but potential long-term drawbacks.", impacts: patterns[1][0] },
+          { text: "Do it properly", explanation: "Slower but builds lasting foundations.", impacts: patterns[1][1] },
+        ],
+      },
+      {
+        question: `${t} stakeholders disagree on direction. How do you resolve it?`,
+        emoji: "🗣️",
+        choices: [
+          { text: "Prioritize sustainability", explanation: "Long-term thinking over short-term wins.", impacts: patterns[2][0] },
+          { text: "Prioritize effectiveness", explanation: "Deliver results now, adapt later.", impacts: patterns[2][1] },
+        ],
+      },
+    ],
+  };
+}
+
+/* ===============================
    🔧 REPAIR MODULES
 ================================ */
 
@@ -42,6 +276,9 @@ function repairModules(parsed: any) {
   if (!parsed?.modules || !Array.isArray(parsed.modules)) return parsed;
 
   for (const mod of parsed.modules) {
+    // Initialize lab_data
+    mod.lab_data = mod.lab_data ?? {};
+
     // Recover lesson_content from alternative field names
     if (!mod.lesson_content) {
       mod.lesson_content = mod.content || mod.lesson || mod.text || "## Lesson Content\n\nContent is being prepared.";
@@ -72,94 +309,76 @@ function repairModules(parsed: any) {
       ];
     }
 
-    // Repair simulation lab_data
-    if (mod.lab_type === "simulation" && mod.lab_data) {
-      const ld = mod.lab_data;
+    // --- Type-specific validation + fallback ---
+    const ld = mod.lab_data;
+    const title = mod.title || "Topic";
 
-      if (!ld.parameters || !Array.isArray(ld.parameters) || ld.parameters.length === 0) {
-        ld.parameters = [
-          { name: `${mod.title} Variable 1`, icon: "📊", unit: "%", min: 0, max: 100, default: 50 },
-          { name: `${mod.title} Variable 2`, icon: "📈", unit: "%", min: 0, max: 100, default: 50 },
-          { name: `${mod.title} Variable 3`, icon: "📉", unit: "%", min: 0, max: 100, default: 50 },
-        ];
-      }
-
-      for (const p of ld.parameters) {
-        p.min = 0;
-        p.max = 100;
-        if (typeof p.default !== "number" || p.default < 0 || p.default > 100) p.default = 50;
-      }
-
-      const paramNames = ld.parameters.map((p: any) => p.name);
-
-      if (!ld.thresholds || !Array.isArray(ld.thresholds) || ld.thresholds.length === 0) {
-        ld.thresholds = [
-          { label: "Excellent", min_percent: 75, message: "Outstanding performance across all factors." },
-          { label: "Good", min_percent: 50, message: "Solid results with room for improvement." },
-          { label: "Needs Work", min_percent: 0, message: "Consider revisiting your approach." },
-        ];
-      }
-
-      if (ld.decisions && Array.isArray(ld.decisions)) {
-        for (const decision of ld.decisions) {
-          if (!decision.choices || !Array.isArray(decision.choices)) continue;
-          for (const choice of decision.choices) {
-            if (choice.effects && !choice.set_state) {
-              const setState: Record<string, number> = {};
-              for (const pName of paramNames) {
-                const delta = choice.effects[pName] ?? 0;
-                setState[pName] = Math.max(0, Math.min(100, 50 + delta));
-              }
-              choice.set_state = setState;
-              delete choice.effects;
+    if (mod.lab_type === "simulation") {
+      if (!isValidSimulation(ld)) {
+        console.warn(`[RepairModules] simulation fallback generated for: "${title}"`);
+        mod.lab_data = generateSimulationFallback(title);
+      } else {
+        // Patch: clamp values, fill missing set_state keys
+        const paramNames = ld.parameters.map((p: any) => p.name);
+        for (const p of ld.parameters) {
+          p.min = 0; p.max = 100;
+          p.default = Math.max(0, Math.min(100, p.default));
+        }
+        for (const d of ld.decisions) {
+          for (const c of d.choices) {
+            if (c.effects && !c.set_state) {
+              const ss: Record<string, number> = {};
+              for (const pn of paramNames) ss[pn] = Math.max(0, Math.min(100, 50 + (c.effects[pn] ?? 0)));
+              c.set_state = ss;
+              delete c.effects;
             }
-
-            if (choice.set_state) {
-              for (const pName of paramNames) {
-                if (typeof choice.set_state[pName] !== "number") {
-                  choice.set_state[pName] = 50;
-                }
-                choice.set_state[pName] = Math.max(0, Math.min(100, choice.set_state[pName]));
-              }
-            } else {
-              choice.set_state = {};
-              for (const pName of paramNames) {
-                choice.set_state[pName] = 50;
+            if (c.set_state) {
+              for (const pn of paramNames) {
+                if (typeof c.set_state[pn] !== "number") c.set_state[pn] = 50;
+                c.set_state[pn] = Math.max(0, Math.min(100, c.set_state[pn]));
               }
             }
           }
         }
       }
-    }
-
-    // Repair policy_optimization lab_data
-    if (mod.lab_type === "policy_optimization" && mod.lab_data) {
-      const ld = mod.lab_data;
-      if (!ld.constraints || !Array.isArray(ld.constraints)) {
-        ld.constraints = [];
+    } else if (mod.lab_type === "classification") {
+      if (!isValidClassification(ld)) {
+        console.warn(`[RepairModules] classification fallback generated for: "${title}"`);
+        mod.lab_data = generateClassificationFallback(title);
       }
-      if (!ld.max_decisions) {
-        ld.max_decisions = (ld.decisions?.length) || 3;
-      }
-      if (ld.parameters) {
+    } else if (mod.lab_type === "policy_optimization") {
+      if (!isValidPolicyOptimization(ld)) {
+        console.warn(`[RepairModules] policy_optimization fallback generated for: "${title}"`);
+        mod.lab_data = generatePolicyOptimizationFallback(title);
+      } else {
         for (const p of ld.parameters) {
-          p.min = 0;
-          p.max = 100;
-          if (typeof p.default !== "number" || p.default < 0 || p.default > 100) p.default = 50;
+          p.min = 0; p.max = 100;
+          p.default = Math.max(0, Math.min(100, p.default));
+        }
+      }
+    } else if (mod.lab_type === "ethical_dilemma") {
+      if (!isValidEthicalDilemma(ld)) {
+        console.warn(`[RepairModules] ethical_dilemma fallback generated for: "${title}"`);
+        mod.lab_data = generateEthicalDilemmaFallback(title);
+      } else {
+        for (const dim of ld.dimensions) {
+          if (!dim.icon) dim.icon = "⚖️";
+          if (!dim.description) dim.description = "";
         }
       }
     }
 
-    // Repair ethical_dilemma lab_data
-    if (mod.lab_type === "ethical_dilemma" && mod.lab_data) {
-      const ld = mod.lab_data;
-      if (!ld.dimensions || !Array.isArray(ld.dimensions)) {
-        ld.dimensions = [];
-      }
-      for (const dim of ld.dimensions) {
-        if (!dim.icon) dim.icon = "⚖️";
-        if (!dim.description) dim.description = "";
-      }
+    // --- FINAL GUARD ---
+    const finalValid =
+      (mod.lab_type === "simulation" && isValidSimulation(mod.lab_data)) ||
+      (mod.lab_type === "classification" && isValidClassification(mod.lab_data)) ||
+      (mod.lab_type === "policy_optimization" && isValidPolicyOptimization(mod.lab_data)) ||
+      (mod.lab_type === "ethical_dilemma" && isValidEthicalDilemma(mod.lab_data));
+
+    if (!finalValid) {
+      console.error(`[RepairModules] FINAL GUARD - Forced simulation for: "${title}"`);
+      mod.lab_type = "simulation";
+      mod.lab_data = generateSimulationFallback(title);
     }
   }
 
