@@ -230,12 +230,8 @@ function SimulationLabInline({ data }: { data: SimulationData }) {
                 min={p.min}
                 max={p.max}
                 step={1}
-                onValueChange={([v]) =>
-                  setValues((prev) => ({
-                    ...prev,
-                    [p.name]: v,
-                  }))
-                }
+                disabled
+                className="pointer-events-none"
               />
             </CardContent>
           </Card>
