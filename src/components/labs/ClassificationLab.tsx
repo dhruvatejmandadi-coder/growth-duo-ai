@@ -4,10 +4,26 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, RotateCcw, ArrowRight } from "lucide-react";
 
+type RawItem = {
+  name?: string;
+  content?: string;
+  correct_category?: string;
+  correctCategory?: string;
+  hint?: string;
+  explanation?: string;
+};
+
 type Item = {
   name: string;
   correct_category: string;
   hint?: string;
+};
+
+type RawCategory = {
+  name: string;
+  emoji?: string;
+  description?: string;
+  color?: string;
 };
 
 type Category = {
