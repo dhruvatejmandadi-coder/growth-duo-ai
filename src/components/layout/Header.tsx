@@ -25,12 +25,16 @@ export function Header() {
       <div className="container mx-auto px-4 sm:px-6">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center pl-2 sm:pl-4">
+          <a
+            href="#"
+            onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            className="flex items-center pl-2 sm:pl-4"
+          >
             <img
               src={rependLogo}
               alt="Repend"
               className="h-8 sm:h-9 w-auto object-contain" />
-          </Link>
+          </a>
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">
