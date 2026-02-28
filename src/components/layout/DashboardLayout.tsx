@@ -1,6 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { Link } from "react-router-dom";
+
 import rependLogo from "@/assets/repend-logo.png";
 
 interface DashboardLayoutProps {
