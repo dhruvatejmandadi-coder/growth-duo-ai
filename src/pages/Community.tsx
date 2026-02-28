@@ -1,8 +1,9 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, MessageCircle, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { Plus, MessageCircle, Loader2, Search } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Input } from "@/components/ui/input";
 import { CreatePostModal } from "@/components/community/CreatePostModal";
 import { PostCard } from "@/components/community/PostCard";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,11 +15,23 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function Community() {
   const [createPostOpen, setCreatePostOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { addCommunityPoints } = usePoints();
   const { posts, loading, createPost, toggleLike, deletePost } = useCommunityPosts();
+
+  const filteredPosts = useMemo(() => {
+    if (!searchQuery.trim()) return posts;
+    const q = searchQuery.toLowerCase();
+    return posts.filter(
+      (p) =>
+        p.title.toLowerCase().includes(q) ||
+        p.content.toLowerCase().includes(q) ||
+        (p.author_name || "").toLowerCase().includes(q)
+    );
+  }, [posts, searchQuery]);
 
   const handleCreatePost = () => {
     if (!user) {
@@ -61,30 +74,47 @@ export default function Community() {
           </p>
         </div>
 
+        {/* Search bar */}
+        <div className="relative mb-6">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search posts by title, content, or author..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
-        ) : posts.length === 0 ? (
+        ) : filteredPosts.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
               <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
                 <MessageCircle className="w-8 h-8 text-muted-foreground" />
               </div>
-              <h3 className="font-display text-lg font-semibold mb-2">No posts yet</h3>
+              <h3 className="font-display text-lg font-semibold mb-2">
+                {searchQuery ? "No matching posts" : "No posts yet"}
+              </h3>
               <p className="text-muted-foreground text-sm max-w-sm mb-6">
-                Be the first to start a conversation! Share a question or problem you're working through.
+                {searchQuery
+                  ? "Try a different search term."
+                  : "Be the first to start a conversation! Share a question or problem you're working through."}
               </p>
-              <Button variant="outline" onClick={handleCreatePost}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create First Post
-              </Button>
+              {!searchQuery && (
+                <Button variant="outline" onClick={handleCreatePost}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create First Post
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
-          <ScrollArea className="h-[calc(100vh-14rem)]">
+          <ScrollArea className="h-[calc(100vh-18rem)]">
             <div className="space-y-4 pr-4">
-              {posts.map((post) => (
+              {filteredPosts.map((post) => (
                 <PostCard
                   key={post.id}
                   post={post}
