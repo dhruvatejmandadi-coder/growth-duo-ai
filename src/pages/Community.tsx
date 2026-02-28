@@ -74,24 +74,41 @@ export default function Community() {
           </p>
         </div>
 
+        {/* Search bar */}
+        <div className="relative mb-6">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search posts by title, content, or author..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
-        ) : posts.length === 0 ? (
+        ) : filteredPosts.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-16 text-center">
               <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
                 <MessageCircle className="w-8 h-8 text-muted-foreground" />
               </div>
-              <h3 className="font-display text-lg font-semibold mb-2">No posts yet</h3>
+              <h3 className="font-display text-lg font-semibold mb-2">
+                {searchQuery ? "No matching posts" : "No posts yet"}
+              </h3>
               <p className="text-muted-foreground text-sm max-w-sm mb-6">
-                Be the first to start a conversation! Share a question or problem you're working through.
+                {searchQuery
+                  ? "Try a different search term."
+                  : "Be the first to start a conversation! Share a question or problem you're working through."}
               </p>
-              <Button variant="outline" onClick={handleCreatePost}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create First Post
-              </Button>
+              {!searchQuery && (
+                <Button variant="outline" onClick={handleCreatePost}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create First Post
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
