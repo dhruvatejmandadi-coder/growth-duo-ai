@@ -15,11 +15,23 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function Community() {
   const [createPostOpen, setCreatePostOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { addCommunityPoints } = usePoints();
   const { posts, loading, createPost, toggleLike, deletePost } = useCommunityPosts();
+
+  const filteredPosts = useMemo(() => {
+    if (!searchQuery.trim()) return posts;
+    const q = searchQuery.toLowerCase();
+    return posts.filter(
+      (p) =>
+        p.title.toLowerCase().includes(q) ||
+        p.content.toLowerCase().includes(q) ||
+        (p.author_name || "").toLowerCase().includes(q)
+    );
+  }, [posts, searchQuery]);
 
   const handleCreatePost = () => {
     if (!user) {
