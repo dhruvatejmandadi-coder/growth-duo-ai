@@ -292,6 +292,65 @@ function repairModules(parsed: any) {
       }
     }
 
+    // --- Slide-level repair ---
+    if (mod.lesson_content) {
+      const slides = mod.lesson_content.split(/\n---\n/).map((s: string) => s.trim()).filter(Boolean);
+      const repairedSlides: string[] = [];
+
+      for (let si = 0; si < slides.length; si++) {
+        let slide = slides[si];
+
+        // Convert paragraph lines to bullets
+        const lines = slide.split("\n");
+        const repaired: string[] = [];
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) { repaired.push(""); continue; }
+          if (trimmed.startsWith("#") || trimmed.startsWith("<!--") || trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+            repaired.push(line);
+          } else if (trimmed.length > 10 && !trimmed.startsWith("#")) {
+            // Convert paragraph text to bullet
+            repaired.push(`- ${trimmed}`);
+          } else {
+            repaired.push(line);
+          }
+        }
+        slide = repaired.join("\n");
+
+        // Inject type comment if missing
+        if (!slide.includes("<!-- type:")) {
+          if (si === slides.length - 1 && slide.toLowerCase().includes("takeaway")) {
+            slide = `<!-- type: key_takeaways -->\n${slide}`;
+          } else {
+            slide = `<!-- type: concept -->\n${slide}`;
+          }
+        }
+
+        repairedSlides.push(slide);
+      }
+
+      // Ensure last slide is key_takeaways
+      if (repairedSlides.length > 0) {
+        const last = repairedSlides[repairedSlides.length - 1];
+        if (!last.includes("<!-- type: key_takeaways -->")) {
+          repairedSlides[repairedSlides.length - 1] = last.replace(/<!-- type: \w+ -->/, "<!-- type: key_takeaways -->");
+        }
+      }
+
+      // Cap at 8 slides by merging smallest adjacent
+      while (repairedSlides.length > 8) {
+        let minLen = Infinity, minIdx = 0;
+        for (let i = 0; i < repairedSlides.length - 1; i++) {
+          const combined = repairedSlides[i].length + repairedSlides[i + 1].length;
+          if (combined < minLen) { minLen = combined; minIdx = i; }
+        }
+        repairedSlides[minIdx] = repairedSlides[minIdx] + "\n" + repairedSlides[minIdx + 1];
+        repairedSlides.splice(minIdx + 1, 1);
+      }
+
+      mod.lesson_content = repairedSlides.join("\n\n---\n\n");
+    }
+
     // Default lab_type
     if (!mod.lab_type) {
       mod.lab_type = "simulation";
