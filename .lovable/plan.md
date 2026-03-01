@@ -1,127 +1,118 @@
-# Simulation Lab Architecture – Topic-Based State Model
 
-## Overview
 
-Simulation labs use a deterministic `set_state` model.
-Each decision sets topic-specific sliders to exact values (0–100).
-This is NOT based on learner understanding, application, or confidence.
-Sliders represent variables intrinsic to the topic being simulated.
+# Slide-Based Content Generation Overhaul
 
----
+## What Changes
 
-## Core Principles
-
-1. **Deterministic**
-   - No deltas.
-   - No additive effects.
-   - Each decision sets the full state snapshot.
-
-2. **Topic-Driven**
-   - Slider names are derived from the course topic.
-   - Example:
-     - Economics → Inflation, Employment, GDP
-     - Biology → Population, Resources, Predators
-     - Programming → Performance, Readability, Memory Usage
-
-3. **Strict Structure**
-   - Every choice must include `set_state`.
-   - `set_state` must define ALL sliders.
-   - Values must be integers 0–100.
-   - At least 2 sliders must change per choice.
+Two areas need updating to enforce the new structured slide format with bullet-only content, slide type rotation, and higher-quality quizzes.
 
 ---
 
-## Simulation Lab Schema
+## 1. Update AI System Prompt (Edge Function)
 
-Each simulation module must include:
-- `parameters`: array of sliders
-- `decisions`: array of decision scenarios
+**File:** `supabase/functions/generate-course/index.ts` (lines 437-535)
 
-### Parameter Format
+Replace the `lesson_content` instructions in the system prompt with the full slide specification:
 
-```json
-{
-  "name": "Inflation",
-  "default": 50
-}
+- Each slide separated by `---`
+- Each slide must start with `<!-- type: [concept|example|case_study|comparison|quick_think|myth_vs_reality|process|interactive_predict|key_takeaways] -->`
+- Followed by `## Slide Title`
+- Then 4-7 bullet points only (no paragraphs, under 15 words each)
+- 4-8 slides per module
+- Mandatory rotation: no more than 2 of same type, at least 1 applied slide, 1 interactive slide
+- Final slide must be `key_takeaways` that synthesizes the module and connects to the course goal
+- Topic relevance enforcement: every slide must directly relate to the module title and support the broader course objective
+- Interactive slides must use module-specific terminology and scenarios
+
+Update quiz instructions to require 6-8 questions per module with a specific mix:
+- 2 conceptual questions
+- 2 applied reasoning questions
+- 2 scenario-based questions
+- 1 optional advanced challenge
+- No definition-only, no trivia, no "All of the above", no verbatim bullet repetition
+
+### Key Prompt Sections to Add
+
+```text
+LESSON CONTENT FORMAT -- CRITICAL:
+Each slide is separated by "---". Each slide MUST follow this exact format:
+
+<!-- type: [concept|example|case_study|comparison|quick_think|myth_vs_reality|process|interactive_predict|key_takeaways] -->
+## Slide Title
+
+- Bullet point 1
+- Bullet point 2
+- Bullet point 3
+- Bullet point 4
+
+SLIDE RULES:
+- 4-8 slides per module
+- 4-7 bullets per slide, each under 15 words
+- NO paragraphs -- bullets ONLY
+- Do NOT repeat the slide title in bullets
+- No more than 2 slides of the same type per module
+- At least 1 applied slide (example, case_study, comparison)
+- At least 1 interactive slide (quick_think or interactive_predict)
+- Final slide MUST be <!-- type: key_takeaways --> and must synthesize the module
+
+TOPIC RELEVANCE:
+- Every slide must directly relate to the module title
+- Every bullet must progress the learner toward the course objective
+- Avoid generic filler, unrelated examples, or repeated ideas
+
+QUIZ RULES:
+- 6-8 questions per module
+- Include 2 conceptual, 2 applied reasoning, 2 scenario-based
+- No definition-only questions, no trivia, no "All of the above"
+- Each question must connect to the module's learning objective
 ```
 
-### Decision Format
+---
 
-```json
-{
-  "prompt": "You increase interest rates.",
-  "choices": [
-    {
-      "text": "Raise rates aggressively",
-      "explanation": "This slows spending but stabilizes inflation.",
-      "set_state": {
-        "Inflation": 40,
-        "Employment": 45,
-        "GDP": 55
-      }
-    }
-  ]
-}
-```
+## 2. Enhance Slide Repair Logic (Edge Function)
+
+**File:** `supabase/functions/generate-course/index.ts` -- update `repairModules`
+
+Add slide-level repair after the existing `lesson_content` recovery:
+
+- Convert any paragraph text (lines without `- ` prefix under a heading) into bullet points
+- Inject `<!-- type: concept -->` if a slide is missing a type comment
+- Ensure the last slide has `<!-- type: key_takeaways -->`
+- Validate slide count is 4-8: if under 4, keep as-is (minimal content); if over 8, merge the smallest adjacent slides
 
 ---
 
-## AI Generation Rules
+## 3. Upgrade Frontend Slide Viewer
 
-When generating a simulation lab:
+**File:** `src/components/courses/LessonSlides.tsx`
 
-- Derive 3–5 meaningful topic variables.
-- Each variable must represent a measurable system dimension.
-- **Avoid** abstract learning metrics (e.g., Understanding, Confidence).
-- Decisions must reflect realistic cause-and-effect within the topic domain.
-- All choices must:
-  - Include `set_state`
-  - Set ALL sliders
-  - Use integer values 0–100
+Parse the `<!-- type: X -->` comment from each slide to extract the slide type and display it:
 
----
+- Extract slide type from comment and `## title` from heading
+- Render a colored badge for the slide type (e.g., "Concept", "Case Study", "Quick Think") at the top of each slide
+- Render the title as a styled heading outside the prose block
+- Strip the comment and heading from the markdown before passing to ReactMarkdown
+- Add progress dots below the slide navigation
+- Increase min-height to 300px
+- Add a subtle fade transition between slides using CSS
 
-## Backend Validation
-
-Before Zod validation:
-- Ensure `lab_type === "simulation"` includes `parameters` + `decisions`.
-- If a choice is missing `set_state`, generation fails.
-- If a slider is missing from `set_state`, generation fails.
-- Clamp values 0–100.
-- No legacy `effects` support.
-
----
-
-## Frontend Assumptions
-
-Frontend expects:
-- Fully populated `set_state`
-- Complete slider coverage
-- No partial states
-- No deltas
-- If a slider is missing, throw error.
+### Slide Type Badge Colors
+- concept: blue
+- example: green
+- case_study: purple
+- comparison: orange
+- quick_think: yellow
+- myth_vs_reality: red
+- process: teal
+- interactive_predict: indigo
+- key_takeaways: emerald
 
 ---
 
-## Example Topics
+## Summary of Files to Change
 
-### Physics – Projectile Motion
-Sliders: Velocity, Angle, Air Resistance
+| File | Change |
+|------|--------|
+| `supabase/functions/generate-course/index.ts` | Rewrite system prompt for slide format + quiz rules; enhance repair logic |
+| `src/components/courses/LessonSlides.tsx` | Parse slide types, render badges/titles, progress dots, fade transitions |
 
-### Cybersecurity – Network Defense
-Sliders: Vulnerability, Detection Speed, System Stability
-
-### Climate Policy
-Sliders: Carbon Emissions, Economic Output, Public Approval
-
----
-
-## Why This Model
-
-Topic-based sliders:
-- Make labs feel real.
-- Improve immersion.
-- Create logical cause-and-effect.
-- Avoid artificial "learning score" gamification.
-- Produce consistent deterministic behavior.
