@@ -6,6 +6,7 @@ import {
   BookOpen,
   LogIn,
   MessageSquare,
+  Sparkles,
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
