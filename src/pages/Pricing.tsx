@@ -58,7 +58,7 @@ const tiers: {
 ];
 
 function FeatureValue({ value }: { value: boolean | string }) {
-  if (value === true) return <Check className="w-4 h-4 text-green-400" />;
+  if (value === true) return <Check className="w-4 h-4 text-primary" />;
   if (value === false) return <X className="w-4 h-4 text-muted-foreground/40" />;
   return <span className="text-sm">{value}</span>;
 }
