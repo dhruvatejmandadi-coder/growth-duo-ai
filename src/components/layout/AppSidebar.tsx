@@ -6,6 +6,7 @@ import {
   BookOpen,
   LogIn,
   MessageSquare,
+  Sparkles,
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -122,6 +123,20 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-3">
         <SidebarMenu>
+          {user && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                tooltip="Upgrade"
+                className="flex items-center gap-3 text-primary hover:text-primary/80 cursor-pointer font-medium"
+              >
+                <NavLink to="/pricing">
+                  <Sparkles className="w-4 h-4 flex-shrink-0" />
+                  <span>Upgrade</span>
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
           <SidebarMenuItem>
             {user ? (
               <SidebarMenuButton

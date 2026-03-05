@@ -125,3 +125,43 @@ Topic-based sliders:
 - Create logical cause-and-effect.
 - Avoid artificial "learning score" gamification.
 - Produce consistent deterministic behavior.
+
+---
+
+# File-Based Course Generation
+
+Allow users to drag-and-drop files (PDF, TXT, MD, PNG, JPG) into the course creation flow. The AI reads the file content and generates a structured slide-based course from it.
+
+## Flow
+User drops file → Upload to `course-uploads` bucket → Edge function fetches file → Convert to base64 → Send to Gemini as document input → Same slide/lab/quiz output as topic-based generation.
+
+## Changes
+1. Storage bucket `course-uploads` (done — private, 10MB max, RLS per user)
+2. Update `src/pages/Courses.tsx` — add drag-and-drop zone below topic input
+3. Update `supabase/functions/generate-course/index.ts` — accept `fileUrl`, fetch from storage, send as multimodal content to Gemini
+
+---
+
+# Pricing Model & Stripe Integration
+
+## 3-Tier Pricing
+
+| | Starter (Free) | Pro ($7.99/mo) | Elite ($11.99/mo) |
+|---|---|---|---|
+| AI Course Generation | 2/month | 10/month | 15/month |
+| Modules per Course | Up to 5 | Up to 10 | Unlimited |
+| File Upload Courses | No | 3/month | Unlimited |
+| Interactive Labs | Basic only | All lab types | All + priority |
+| Community | Full access (free) | Full access | Enhanced (TBD) |
+| Daily Challenges | View only | Full participation | Full + exclusive (TBD) |
+| Quizzes | Limited retries | Unlimited | Unlimited + analytics |
+| Certificates | No | Yes | Yes + shareable |
+| Progress Analytics | Basic | Detailed | Advanced behavioral |
+
+## Implementation
+1. Stripe products: Pro ($7.99/mo), Elite ($11.99/mo)
+2. Database: `subscriptions` + `usage_tracking` tables (done)
+3. Edge functions: `create-checkout`, `check-subscription`, `customer-portal`
+4. Frontend: `useSubscription` hook, Pricing page, UpgradePrompt component
+5. Feature gating across Courses, Community, Challenges, Profile
+6. Navigation: Pricing link in Header, Upgrade button in Sidebar above Sign Out
