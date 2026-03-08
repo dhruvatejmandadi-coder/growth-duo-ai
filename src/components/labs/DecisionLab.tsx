@@ -100,7 +100,7 @@ export default function DecisionLab({ data, onComplete }: { data: DecisionLabDat
       return;
     }
     const fb = await getAIFeedback("reflection");
-    if (fb) { setFinalFeedback(fb); setPhase("final"); }
+    if (fb) { setFinalFeedback(fb); setPhase("final"); if (onComplete) onComplete(); }
   };
 
   const reset = () => {
