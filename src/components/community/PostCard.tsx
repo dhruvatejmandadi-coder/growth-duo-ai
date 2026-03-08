@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Heart, MessageCircle, Trash2 } from "lucide-react";
 import { CommunityPost } from "@/hooks/useCommunityPosts";
 import { PostCommentsSection } from "./PostCommentsSection";
