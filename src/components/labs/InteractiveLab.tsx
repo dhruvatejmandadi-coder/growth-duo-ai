@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { TrendingUp, TrendingDown, Minus, MessageCircleQuestion, RotateCcw } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, MessageCircleQuestion, RotateCcw, CheckCircle2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
@@ -88,7 +88,7 @@ function ensureDecisionSetState(decisions: Decision[], parameters: Parameter[]):
 
 /* ================= SIMULATION ================= */
 
-function SimulationLabInline({ data, onComplete }: { data: SimulationData; onComplete?: () => void }) {
+function SimulationLabInline({ data, onComplete, isCompleted }: { data: SimulationData; onComplete?: () => void; isCompleted?: boolean }) {
   const parameters = useMemo(() => data.parameters ?? [], [data]);
   const thresholds = useMemo(() => data.thresholds ?? [], [data]);
   const rawDecisions = useMemo(() => data.decisions ?? [], [data]);
@@ -155,6 +155,22 @@ function SimulationLabInline({ data, onComplete }: { data: SimulationData; onCom
     setAnswered({});
     setCompletionFired(false);
   };
+
+  // Show completed state when revisiting
+  if (isCompleted && !allDone) {
+    return (
+      <Card className="border-green-500/20 bg-green-500/[0.04]">
+        <CardContent className="p-6 text-center space-y-3">
+          <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto" />
+          <h3 className="font-bold text-lg">Simulation Complete</h3>
+          <p className="text-sm text-muted-foreground">You've already completed this simulation.</p>
+          <Button variant="outline" onClick={reset}>
+            <RotateCcw className="w-4 h-4 mr-1" /> Replay Simulation
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -275,32 +291,32 @@ export default function InteractiveLab({ labType, labData, labTitle, labDescript
   if (labType === "classification") {
     const hasData = labData?.items?.length > 0 && labData?.categories?.length > 0;
     if (!hasData) return <LabEmptyState labType={labType} />;
-    return <ClassificationLab data={labData} onComplete={onComplete} />;
+    return <ClassificationLab data={labData} onComplete={onComplete} isCompleted={isCompleted} />;
   }
 
   // Policy Optimization
   if (labType === "policy_optimization") {
     const hasData = labData?.parameters?.length > 0 && labData?.constraints?.length > 0;
     if (!hasData) return <LabEmptyState labType={labType} />;
-    return <PolicyOptimizationLab data={labData} onComplete={onComplete} />;
+    return <PolicyOptimizationLab data={labData} onComplete={onComplete} isCompleted={isCompleted} />;
   }
 
   // Ethical Dilemma
   if (labType === "ethical_dilemma") {
     const hasData = labData?.dimensions?.length > 0 && labData?.decisions?.length > 0;
     if (!hasData) return <LabEmptyState labType={labType} />;
-    return <EthicalDilemmaLab data={labData} onComplete={onComplete} />;
+    return <EthicalDilemmaLab data={labData} onComplete={onComplete} isCompleted={isCompleted} />;
   }
 
   // Decision Lab
   if (labType === "decision_lab") {
     const hasData = labData?.scenario && labData?.constraints?.length > 0 && labData?.decision_prompt;
     if (!hasData) return <LabEmptyState labType={labType} />;
-    return <DecisionLab data={labData} onComplete={onComplete} />;
+    return <DecisionLab data={labData} onComplete={onComplete} isCompleted={isCompleted} />;
   }
 
   // Default: Simulation
   const hasSimulationData = labData?.parameters?.length > 0;
   if (!hasSimulationData) return <LabEmptyState labType={labType} />;
-  return <SimulationLabInline data={labData} onComplete={onComplete} />;
+  return <SimulationLabInline data={labData} onComplete={onComplete} isCompleted={isCompleted} />;
 }

@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, AlertTriangle, Brain, Target, RotateCcw, ChevronRight, Sparkles, ShieldAlert, Lightbulb, TrendingUp } from "lucide-react";
+import { Loader2, AlertTriangle, Brain, Target, RotateCcw, ChevronRight, Sparkles, ShieldAlert, Lightbulb, TrendingUp, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -38,7 +38,7 @@ type Phase = "scenario" | "respond" | "feedback" | "twist" | "twist_feedback" | 
 
 /* ===== COMPONENT ===== */
 
-export default function DecisionLab({ data, onComplete }: { data: DecisionLabData; onComplete?: () => void }) {
+export default function DecisionLab({ data, onComplete, isCompleted }: { data: DecisionLabData; onComplete?: () => void; isCompleted?: boolean }) {
   const [phase, setPhase] = useState<Phase>("scenario");
   const [response, setResponse] = useState<StudentResponse>({ strategy: "", core_assumption: "", biggest_risk: "" });
   const [twistResponse, setTwistResponse] = useState("");
@@ -115,6 +115,22 @@ export default function DecisionLab({ data, onComplete }: { data: DecisionLabDat
 
   const tierLabel = data.difficulty_tier === 3 ? "Strategic Tradeoffs" : data.difficulty_tier === 2 ? "Constrained" : "Core Clarity";
   const tierColor = data.difficulty_tier === 3 ? "text-red-400" : data.difficulty_tier === 2 ? "text-yellow-400" : "text-green-400";
+
+  // Show completed state when revisiting
+  if (isCompleted && phase === "scenario") {
+    return (
+      <Card className="border-green-500/20 bg-green-500/[0.04]">
+        <CardContent className="p-6 text-center space-y-3">
+          <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto" />
+          <h3 className="font-bold text-lg">Decision Lab Complete</h3>
+          <p className="text-sm text-muted-foreground">You've already completed this decision lab.</p>
+          <Button variant="outline" onClick={() => setPhase("scenario")}>
+            <RotateCcw className="w-4 h-4 mr-1" /> Try Again
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4">
