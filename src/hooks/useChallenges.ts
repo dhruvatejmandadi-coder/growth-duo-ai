@@ -11,6 +11,8 @@ export interface Challenge {
   expires_at: string | null;
   created_at: string;
   user_id: string | null;
+  lab_type: string | null;
+  lab_data: any;
 }
 
 export function useChallenges() {
@@ -20,8 +22,6 @@ export function useChallenges() {
 
   const fetchChallenges = async () => {
     setLoading(true);
-    
-    // Fetch admin challenges (no user_id) and user's own challenges
     const { data, error } = await supabase
       .from("challenges")
       .select("*")

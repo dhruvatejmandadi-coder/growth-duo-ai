@@ -17,7 +17,7 @@ export default function Challenges() {
   const [prompt, setPrompt] = useState("");
   const [generating, setGenerating] = useState(false);
   const { dailyChallenge, myChallenges, communityChallenges, loading, refetch } = useChallenges();
-  const { completedChallenges } = usePoints();
+  const { completedChallenges, addPoints } = usePoints();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -45,8 +45,10 @@ export default function Challenges() {
         throw new Error(err.error || "Failed to generate challenge");
       }
 
+      const result = await resp.json();
       setPrompt("");
-      toast({ title: "Challenge created! 🎯", description: "Your personalized challenge is ready." });
+      toast({ title: "Challenge created! 🎯", description: "Your personalized interactive challenge is ready. +50 points!" });
+      addPoints(50, "create_challenge");
       refetch();
       setActiveTab("my");
     } catch (error) {
