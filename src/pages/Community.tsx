@@ -64,7 +64,7 @@ export default function Community() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 pb-24 relative min-h-full">
         {/* Header */}
         <div className="mb-6">
