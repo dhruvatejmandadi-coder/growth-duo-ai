@@ -29,8 +29,15 @@ export function Header() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <a
-            href="#"
-            onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            href="/"
+            onClick={(e) => {
+              e.preventDefault();
+              if (isLanding) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              } else {
+                navigate("/");
+              }
+            }}
             className="flex items-center"
           >
             <img
