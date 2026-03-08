@@ -18,7 +18,6 @@ serve(async (req) => {
       });
     }
 
-    // Auth
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Not authenticated" }), {
@@ -41,9 +40,11 @@ serve(async (req) => {
       });
     }
 
-    // Generate challenge via AI
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    // Determine best lab type based on topic
+    const labTypes = ["simulation", "classification", "ethical_dilemma", "policy_optimization", "decision_lab"];
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -56,42 +57,76 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a learning challenge generator. Given a topic or prompt, create an engaging, actionable learning challenge. Return ONLY a JSON object with exactly these fields:
-- "title": A concise, compelling challenge title (max 80 chars)
-- "description": A detailed description of the challenge with clear steps and goals (2-4 sentences, max 300 chars)
+            content: `You are an interactive learning challenge generator. Given a topic, create an engaging challenge with an interactive lab experience.
 
-The challenge should be:
-- Specific and actionable (not vague)
-- Completable in 1-3 hours
-- Focused on hands-on practice, not just reading
-- Related to the user's topic
+Choose the BEST lab type for the topic from: ${labTypes.join(", ")}
 
-Return ONLY valid JSON, no markdown, no code blocks.`,
+Guidelines for lab type selection:
+- "simulation": For causal/systemic topics (economics, environment, health systems). Uses 3 parameters (0-100 scale) and decision scenarios.
+- "classification": For analytical/sorting topics (categorizing items, identifying patterns). Uses items and categories.
+- "ethical_dilemma": For moral/ethical topics (medical ethics, business ethics, social issues). Uses dimensions and decisions with tradeoffs.
+- "policy_optimization": For strategy/constraint topics (budgeting, resource allocation). Uses parameters, constraints, and targets.
+- "decision_lab": For complex reasoning topics (case studies, strategic planning). Uses scenario, constraints, and decision prompts.
+
+CRITICAL RULES FOR LAB DATA:
+
+For "simulation" type:
+- Exactly 3 parameters with name, icon (emoji), unit, min (0), max (100), default (40-60)
+- Exactly 3 thresholds with label, min_percent, message
+- 2-4 decisions, each with a question, emoji, and 2-3 choices
+- EVERY choice MUST have set_state with ALL 3 parameter names as keys and values 0-100
+- Every decision must create meaningful tradeoffs
+
+For "classification" type:
+- 5-8 items, each with name, description
+- 2-4 categories with name, description
+- correct_mapping object mapping item names to category names
+
+For "ethical_dilemma" type:
+- 3-4 dimensions with name, icon (emoji), description, initial_value (40-60)
+- 2-4 decisions with scenario, emoji, and 2-3 options
+- Each option has label, description, and impacts (object mapping dimension names to number changes like +15, -10)
+
+For "policy_optimization" type:
+- 3-4 parameters with name, icon (emoji), unit, min (0), max (100), default, step (5-10)
+- 2-4 constraints with description and check logic description
+- 2-3 targets with name, operator (">=", "<="), value, unit
+- max_moves: 3-5
+
+For "decision_lab" type:
+- scenario: detailed scenario text
+- 3-4 constraints (strings)
+- decision_prompt: what the user must decide
+- considerations: 3-4 key factors to think about
+
+Return the result using the create_interactive_challenge function.`,
           },
           {
             role: "user",
-            content: `Create a learning challenge about: ${prompt.trim()}`,
+            content: `Create an interactive learning challenge about: ${prompt.trim()}`,
           },
         ],
         tools: [
           {
             type: "function",
             function: {
-              name: "create_challenge",
-              description: "Create a structured learning challenge",
+              name: "create_interactive_challenge",
+              description: "Create an interactive challenge with lab data",
               parameters: {
                 type: "object",
                 properties: {
                   title: { type: "string", description: "Challenge title, max 80 chars" },
-                  description: { type: "string", description: "Challenge description with clear steps, max 300 chars" },
+                  description: { type: "string", description: "Challenge description, max 300 chars" },
+                  lab_type: { type: "string", enum: labTypes, description: "The type of interactive lab" },
+                  lab_data: { type: "object", description: "The structured lab data matching the lab_type schema" },
                 },
-                required: ["title", "description"],
+                required: ["title", "description", "lab_type", "lab_data"],
                 additionalProperties: false,
               },
             },
           },
         ],
-        tool_choice: { type: "function", function: { name: "create_challenge" } },
+        tool_choice: { type: "function", function: { name: "create_interactive_challenge" } },
       }),
     });
 
@@ -114,29 +149,52 @@ Return ONLY valid JSON, no markdown, no code blocks.`,
     }
 
     const aiData = await aiResponse.json();
-    
-    // Extract from tool call
-    let challengeData: { title: string; description: string };
+
+    let challengeData: { title: string; description: string; lab_type: string; lab_data: any };
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
       challengeData = JSON.parse(toolCall.function.arguments);
     } else {
-      // Fallback: try parsing content
       const content = aiData.choices?.[0]?.message?.content || "";
       const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
       challengeData = JSON.parse(cleaned);
     }
 
-    if (!challengeData.title || !challengeData.description) {
+    if (!challengeData.title || !challengeData.description || !challengeData.lab_type || !challengeData.lab_data) {
       throw new Error("AI returned incomplete challenge data");
     }
 
-    // Insert challenge
+    // Validate lab_type
+    if (!labTypes.includes(challengeData.lab_type)) {
+      challengeData.lab_type = "simulation";
+    }
+
+    // Repair simulation lab data if needed
+    if (challengeData.lab_type === "simulation" && challengeData.lab_data?.parameters) {
+      const params = challengeData.lab_data.parameters;
+      if (challengeData.lab_data.decisions) {
+        for (const decision of challengeData.lab_data.decisions) {
+          if (decision.choices) {
+            for (const choice of decision.choices) {
+              if (!choice.set_state) choice.set_state = {};
+              for (const p of params) {
+                if (typeof choice.set_state[p.name] !== "number") {
+                  choice.set_state[p.name] = p.default ?? 50;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
     const { data: challenge, error: insertError } = await supabase
       .from("challenges")
       .insert({
         title: challengeData.title.slice(0, 80),
         description: challengeData.description.slice(0, 500),
+        lab_type: challengeData.lab_type,
+        lab_data: challengeData.lab_data,
         user_id: user.id,
         is_daily: false,
       })
