@@ -143,7 +143,7 @@ export default function Challenges() {
 
         <TabsContent value="completed" className="mt-6">
           {(() => {
-            const all = [...myChallenges, ...communityChallenges];
+            const all = [...myChallenges, ...activeChallenges];
             const completed = filterBySearch(all.filter((c) => completedChallenges.includes(c.id)));
             return completed.length === 0 ? (
               <Card className="border-dashed border-border/50">
