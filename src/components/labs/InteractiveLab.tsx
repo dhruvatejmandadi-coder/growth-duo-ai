@@ -139,11 +139,21 @@ function SimulationLabInline({ data, onComplete }: { data: SimulationData; onCom
 
   const allDone = decisions.length > 0 && Object.keys(answered).length === decisions.length;
 
+  // Fire completion callback once
+  const [completionFired, setCompletionFired] = useState(false);
+  useEffect(() => {
+    if (allDone && !completionFired && onComplete) {
+      onComplete();
+      setCompletionFired(true);
+    }
+  }, [allDone, completionFired, onComplete]);
+
   const reset = () => {
     const initial = Object.fromEntries(parameters.map((p) => [p.name, p.default]));
     setValues(initial);
     setCurrentDecision(0);
     setAnswered({});
+    setCompletionFired(false);
   };
 
   return (
