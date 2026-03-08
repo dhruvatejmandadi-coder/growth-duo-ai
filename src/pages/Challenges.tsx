@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trophy, Star, Loader2, Plus, Sparkles, Trash2, Search } from "lucide-react";
+import { Trophy, Star, Loader2, Plus, Sparkles, Trash2, Search, Play } from "lucide-react";
 import { ChallengeCard } from "@/components/challenges/ChallengeCard";
 import { DailyChallengeCard } from "@/components/challenges/DailyChallengeCard";
 import { useChallenges } from "@/hooks/useChallenges";
@@ -17,7 +17,7 @@ export default function Challenges() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("my");
   const [searchQuery, setSearchQuery] = useState("");
-  const { dailyChallenge, myChallenges, communityChallenges, loading, refetch } = useChallenges();
+  const { dailyChallenge, myChallenges, activeChallenges, loading, refetch } = useChallenges();
   const { completedChallenges } = usePoints();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -87,7 +87,7 @@ export default function Challenges() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-3 mx-auto">
           <TabsTrigger value="my" className="text-[13px]">My Challenges</TabsTrigger>
-          <TabsTrigger value="community" className="text-[13px]">Community</TabsTrigger>
+          <TabsTrigger value="active" className="text-[13px]">Active</TabsTrigger>
           <TabsTrigger value="completed" className="text-[13px]">Completed</TabsTrigger>
         </TabsList>
 
@@ -123,18 +123,18 @@ export default function Challenges() {
           )}
         </TabsContent>
 
-        <TabsContent value="community" className="mt-6">
-          {filterBySearch(communityChallenges).length === 0 ? (
+        <TabsContent value="active" className="mt-6">
+          {filterBySearch(activeChallenges).length === 0 ? (
             <Card className="border-dashed border-border/50">
               <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                <Trophy className="w-10 h-10 text-muted-foreground/30 mb-4" />
-                <h3 className="font-semibold text-sm mb-1">No community challenges</h3>
-                <p className="text-muted-foreground text-[13px]">Check back soon!</p>
+                <Play className="w-10 h-10 text-muted-foreground/30 mb-4" />
+                <h3 className="font-semibold text-sm mb-1">No active challenges</h3>
+                <p className="text-muted-foreground text-[13px]">Join a challenge to see it here!</p>
               </CardContent>
             </Card>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filterBySearch(communityChallenges).map((challenge) => (
+              {filterBySearch(activeChallenges).map((challenge) => (
                 <ChallengeCard key={challenge.id} challenge={challenge} />
               ))}
             </div>
@@ -143,7 +143,7 @@ export default function Challenges() {
 
         <TabsContent value="completed" className="mt-6">
           {(() => {
-            const all = [...myChallenges, ...communityChallenges];
+            const all = [...myChallenges, ...activeChallenges];
             const completed = filterBySearch(all.filter((c) => completedChallenges.includes(c.id)));
             return completed.length === 0 ? (
               <Card className="border-dashed border-border/50">
