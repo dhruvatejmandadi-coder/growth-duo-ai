@@ -1,4 +1,4 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { TrendingUp, Flame, Target, Trophy, Calendar, BookOpen, ClipboardCheck, Star } from "lucide-react";
@@ -20,8 +20,7 @@ export default function ProgressPage() {
   const pointsProgress = Math.min((totalPoints / nextPointsMilestone) * 100, 100);
 
   return (
-    <DashboardLayout>
-      <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6">
         <div>
           <h1 className="font-display text-2xl font-bold">Your Progress</h1>
           <p className="text-muted-foreground mt-1">Track your learning journey and achievements</p>
@@ -155,7 +154,6 @@ export default function ProgressPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
-    </DashboardLayout>
+    </div>
   );
 }

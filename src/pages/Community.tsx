@@ -1,4 +1,4 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Card, CardContent } from "@/components/ui/card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, MessageCircle, Loader2, Search } from "lucide-react";
@@ -64,7 +64,7 @@ export default function Community() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 pb-24 relative min-h-full">
         {/* Header */}
         <div className="mb-6">
@@ -142,6 +142,6 @@ export default function Community() {
         onOpenChange={setCreatePostOpen}
         onPostCreated={handlePostCreated}
       />
-    </DashboardLayout>
+    </>
   );
 }

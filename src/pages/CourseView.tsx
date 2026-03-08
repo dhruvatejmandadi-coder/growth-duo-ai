@@ -1,4 +1,4 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Button } from "@/components/ui/button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -190,11 +190,9 @@ export default function CourseView() {
 
   if (loading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-[60vh]">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center h-[60vh]">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
@@ -204,7 +202,7 @@ export default function CourseView() {
   const quizPassed = quizPct >= PASS_THRESHOLD * 100;
 
   return (
-    <DashboardLayout>
+    <>
       {justCompleted && course && (
         <CourseCompletionScreen
           courseName={course.title}
@@ -401,6 +399,6 @@ export default function CourseView() {
           </main>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }

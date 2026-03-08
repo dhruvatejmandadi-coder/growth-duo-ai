@@ -1,4 +1,4 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -114,8 +114,7 @@ export default function Pricing() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-6 max-w-5xl mx-auto">
         <div className="text-center mb-10">
           <h1 className="font-display text-3xl font-bold mb-2">Choose Your Plan</h1>
           <p className="text-muted-foreground max-w-lg mx-auto">
@@ -232,6 +231,6 @@ export default function Pricing() {
           </>
         )}
       </div>
-    </DashboardLayout>
+    </div>
   );
 }

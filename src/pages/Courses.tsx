@@ -1,4 +1,4 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Button } from "@/components/ui/button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -151,7 +151,7 @@ export default function Courses() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="page-container space-y-10">
         {/* Header */}
         <div className="max-w-2xl mx-auto text-center pt-4">
@@ -309,6 +309,6 @@ export default function Courses() {
       </div>
 
       <GeneratingSignUpPrompt open={showSignUpPrompt} onOpenChange={handleSignUpPromptClose} topic={topic} />
-    </DashboardLayout>
+    </>
   );
 }
