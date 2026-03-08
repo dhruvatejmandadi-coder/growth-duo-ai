@@ -8,7 +8,21 @@ const corsHeaders = {
 
 /* ── Challenge type → prompt strategy mapping ── */
 
-function buildSystemPrompt(challengeType: string, labTypes: string[]): string {
+function isMathTopic(topic: string): boolean {
+  const mathKeywords = [
+    "math", "algebra", "geometry", "calculus", "trigonometry", "statistics",
+    "equation", "function", "graph", "polynomial", "quadratic", "linear",
+    "derivative", "integral", "matrix", "vector", "probability", "fraction",
+    "exponent", "logarithm", "inequality", "triangle", "circle", "angle",
+    "theorem", "arithmetic", "number theory", "combinatorics", "slope",
+    "intercept", "vertex", "parabola", "hyperbola", "sine", "cosine",
+    "tangent", "factoring", "simplif", "expression", "coordinate",
+  ];
+  const lower = topic.toLowerCase();
+  return mathKeywords.some((kw) => lower.includes(kw));
+}
+
+function buildSystemPrompt(challengeType: string, labTypes: string[], isMath: boolean): string {
   const baseRules = `You are an interactive learning challenge generator for a cognitive simulation platform.
 Given a topic, create an engaging challenge with full structured content.
 
@@ -23,6 +37,71 @@ You MUST generate ALL of these fields:
 - solution_explanation: Detailed explanation of why this is the solution
 - difficulty: "easy", "medium", or "hard"
 - challenge_type: The type of challenge`;
+
+  // ── MATH LAB: specialized math generator ──
+  if (isMath) {
+    return `${baseRules}
+- lab_type: MUST be "math_lab"
+- lab_data: A complete math lab with visual representations
+
+You are generating a MATH LAB. This is a specialized interactive math experience.
+
+The lab_data MUST contain ALL of these fields:
+- title: Lab title
+- objective: What math skill the student will practice
+- concept_overview: 2-4 sentence explanation of the math concept
+- visual_type: One of "graph", "geometry", "solution_steps", "chart"
+- scenario: A real-world scenario where this math concept applies
+- instructions: Step-by-step lab instructions
+- tasks: Array of 3-5 tasks (each with id, description, type, correct_answer)
+- hints: Array of 2 hint strings
+- solution: The correct answer
+- solution_explanation: Step-by-step explanation
+
+VISUAL TYPE SELECTION RULES:
+- If the topic involves functions, equations, graphing, slopes, intercepts → visual_type = "graph"
+- If the topic involves shapes, angles, triangles, circles, polygons → visual_type = "geometry"
+- If the topic involves solving equations step-by-step → visual_type = "solution_steps"
+- If the topic involves data, statistics, probability → visual_type = "chart"
+
+FOR visual_type = "graph", lab_data MUST include graph_data:
+{
+  "type": "function" or "scatter" or "bar",
+  "equation": "x^2 - 4*x + 3" (JavaScript math expression using x),
+  "x_label": "x",
+  "y_label": "y",
+  "x_range": [-5, 10],
+  "y_range": [-5, 15],
+  "key_points": [{"x": 2, "y": -1, "label": "Vertex (2,-1)"}, {"x": 1, "y": 0, "label": "Root (1,0)"}]
+}
+IMPORTANT: The equation must be a valid JavaScript math expression. Use * for multiplication, ^ for exponents. Examples:
+- "x^2 - 4*x + 3" for quadratics
+- "2*x + 1" for linear
+- "Math.sin(x)" for trig
+- "Math.abs(x)" for absolute value
+
+FOR visual_type = "geometry", lab_data MUST include geometry (array of shapes):
+[{
+  "type": "triangle",
+  "points": [{"x": 1, "y": 1, "label": "A"}, {"x": 5, "y": 1, "label": "B"}, {"x": 3, "y": 7, "label": "C"}],
+  "measurements": {"AB": "4 units", "BC": "6.3 units", "angle_B": "45°"}
+}]
+Points must be in range 0-10 for proper rendering.
+
+FOR visual_type = "solution_steps", lab_data MUST include solution_steps:
+[{"step": 1, "expression": "2x + 5 = 15", "explanation": "Start with the original equation"},
+ {"step": 2, "expression": "2x = 10", "explanation": "Subtract 5 from both sides"}]
+
+FOR visual_type = "chart", lab_data MUST include graph_data:
+{"type": "bar", "data_labels": ["A", "B", "C"], "data_values": [10, 25, 15], "x_label": "Category", "y_label": "Value"}
+
+TASK FORMAT:
+Each task must have: id (number), description (string), type ("input" | "choice" | "explanation"), correct_answer (string)
+For choice tasks, also include options (array of 3-4 strings).
+Tasks should progress from easier to harder.
+
+Return the result using the create_challenge_full function.`;
+  }
 
   // ── Lab / Interactive: MUST generate full interactive lab ──
   if (challengeType === "lab_interactive") {
