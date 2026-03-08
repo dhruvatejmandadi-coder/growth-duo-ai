@@ -17,7 +17,7 @@ export default function Challenges() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("my");
   const [searchQuery, setSearchQuery] = useState("");
-  const { dailyChallenge, myChallenges, communityChallenges, loading, refetch } = useChallenges();
+  const { dailyChallenge, myChallenges, activeChallenges, loading, refetch } = useChallenges();
   const { completedChallenges } = usePoints();
   const { user } = useAuth();
   const { toast } = useToast();
