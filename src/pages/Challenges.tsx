@@ -17,7 +17,7 @@ export default function Challenges() {
   const [prompt, setPrompt] = useState("");
   const [generating, setGenerating] = useState(false);
   const { dailyChallenge, myChallenges, communityChallenges, loading, refetch } = useChallenges();
-  const { completedChallenges } = usePoints();
+  const { completedChallenges, addPoints } = usePoints();
   const { user } = useAuth();
   const { toast } = useToast();
 
