@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { GeneratingSignUpPrompt } from "@/components/survey/GeneratingSignUpPrompt";
+import { CourseGeneratingScreen } from "@/components/courses/CourseGeneratingScreen";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = ".pdf,.txt,.md,.csv,.png,.jpg,.jpeg,.webp";
