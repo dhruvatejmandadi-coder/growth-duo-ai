@@ -88,8 +88,7 @@ export default function Profile() {
   const userName = fullName || user?.user_metadata?.full_name || "Learner";
 
   return (
-    <DashboardLayout>
-      <div className="p-6 max-w-2xl mx-auto space-y-6">
+    <div className="p-6 max-w-2xl mx-auto space-y-6">
         <div>
           <h1 className="font-display text-2xl font-bold">Your Profile</h1>
           <p className="text-muted-foreground mt-1">Manage your account settings</p>
