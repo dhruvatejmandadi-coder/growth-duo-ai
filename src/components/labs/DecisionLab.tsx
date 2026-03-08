@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, AlertTriangle, Brain, Target, RotateCcw, ChevronRight, Sparkles, ShieldAlert, Lightbulb, TrendingUp } from "lucide-react";
+import { Loader2, AlertTriangle, Brain, Target, RotateCcw, ChevronRight, Sparkles, ShieldAlert, Lightbulb, TrendingUp, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
