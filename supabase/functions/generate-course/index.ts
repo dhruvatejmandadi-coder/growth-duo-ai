@@ -648,14 +648,15 @@ SLIDE TYPE ROTATION:
 - key_takeaways: final summary slide
 
 === QUIZ RULES ===
-- 6-8 questions per module
-- Include 2 conceptual questions (test understanding of core ideas)
-- Include 2 applied reasoning questions (apply concepts to new situations)
-- Include 2 scenario-based questions (given a scenario, what happens?)
-- Optionally include 1 advanced challenge question
+- 8-10 questions per module (students need 70% to pass)
+- Include 3 conceptual questions (test understanding of core ideas)
+- Include 3 applied reasoning questions (apply concepts to new situations)
+- Include 2-3 scenario-based questions (given a scenario, what happens?)
+- Include 1 advanced challenge question
 - No definition-only questions, no trivia, no "All of the above"
 - No repeating slide bullets verbatim as answer options
 - Each question must connect to the module's learning objective
+- Vary difficulty: mix easy, medium, and hard questions for diverse scoring
 
 === INTELLIGENT LAB ASSIGNMENT ===
 Choose lab_type based on the topic's cognitive nature:
