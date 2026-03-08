@@ -20,7 +20,7 @@ const CourseSchema = z.object({
       lesson_content: z.string(),
       youtube_query: z.string().optional(),
       youtube_title: z.string().optional(),
-      lab_type: z.enum(["simulation", "classification", "policy_optimization", "ethical_dilemma", "decision_lab"]),
+      lab_type: z.enum(["simulation", "classification", "policy_optimization", "ethical_dilemma", "decision_lab", "math_lab"]),
       lab_data: z.any(),
       quiz: z.array(
         z.object({
