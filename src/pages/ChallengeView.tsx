@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Loader2, Trophy, CheckCircle2, Target, BookOpen, Lightbulb, FileText, Eye, EyeOff } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Loader2, Trophy, CheckCircle2, Target, BookOpen, Lightbulb, FileText, Eye, EyeOff, Send, FlaskConical } from "lucide-react";
 import InteractiveLab from "@/components/labs/InteractiveLab";
 import { ChallengeComments } from "@/components/challenges/ChallengeComments";
 import { usePoints } from "@/hooks/usePoints";
@@ -17,6 +18,8 @@ export default function ChallengeView() {
   const [loading, setLoading] = useState(true);
   const [showSolution, setShowSolution] = useState(false);
   const [hintsRevealed, setHintsRevealed] = useState<number[]>([]);
+  const [userAnswer, setUserAnswer] = useState("");
+  const [submitted, setSubmitted] = useState(false);
   const { completeChallenge, completedChallenges } = usePoints();
   const { toast } = useToast();
 
@@ -40,6 +43,15 @@ export default function ChallengeView() {
     if (!challenge || isCompleted) return;
     completeChallenge(challenge.id, challenge.is_daily);
     toast({ title: "Challenge completed! 🎉", description: `+${challenge.is_daily ? 100 : 50} points earned!` });
+  };
+
+  const handleSubmitAnswer = () => {
+    if (!userAnswer.trim()) return;
+    setSubmitted(true);
+    if (!isCompleted && challenge) {
+      completeChallenge(challenge.id, challenge.is_daily);
+      toast({ title: "Answer submitted! 🎉", description: `+${challenge.is_daily ? 100 : 50} points earned!` });
+    }
   };
 
   const toggleHint = (i: number) => {
@@ -66,6 +78,7 @@ export default function ChallengeView() {
   }
 
   const hints: string[] = Array.isArray(challenge.hints) ? challenge.hints : [];
+  const hasLab = challenge.lab_data && challenge.lab_type;
 
   return (
     <div className="page-container space-y-6 max-w-4xl mx-auto pb-12">
@@ -146,22 +159,61 @@ export default function ChallengeView() {
       )}
 
       {/* Interactive Lab */}
-      {challenge.lab_data && challenge.lab_type ? (
-        <InteractiveLab
-          labType={challenge.lab_type}
-          labData={challenge.lab_data}
-          labTitle={challenge.title}
-          labDescription={challenge.description}
-          onComplete={handleLabComplete}
-          isCompleted={isCompleted}
-        />
+      {hasLab ? (
+        <Card className="border-accent/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
+              <FlaskConical className="w-4 h-4" /> Interactive Lab
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <InteractiveLab
+              labType={challenge.lab_type}
+              labData={challenge.lab_data}
+              labTitle={challenge.title}
+              labDescription={challenge.description}
+              onComplete={handleLabComplete}
+              isCompleted={isCompleted}
+            />
+          </CardContent>
+        </Card>
       ) : (
-        <Card>
-          <CardContent className="p-8 text-center space-y-3">
-            <Trophy className="w-10 h-10 text-muted-foreground/40 mx-auto" />
-            <p className="text-sm text-muted-foreground">Text-based challenge — complete it below.</p>
-            {!isCompleted && (
-              <Button onClick={handleLabComplete}>Mark as Complete (+50 pts)</Button>
+        /* Workspace for text-based challenges */
+        <Card className="border-accent/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
+              <Send className="w-4 h-4" /> Your Answer
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {submitted || isCompleted ? (
+              <div className="text-center space-y-3 py-4">
+                <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto" />
+                <p className="font-semibold">Answer Submitted!</p>
+                {userAnswer && (
+                  <div className="bg-muted/50 rounded-lg p-3 text-sm text-left whitespace-pre-wrap">
+                    {userAnswer}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">Check the solution below to compare your answer.</p>
+              </div>
+            ) : (
+              <>
+                <Textarea
+                  placeholder="Type your answer, explanation, or solution here..."
+                  value={userAnswer}
+                  onChange={(e) => setUserAnswer(e.target.value)}
+                  rows={5}
+                  className="resize-y"
+                />
+                <Button
+                  onClick={handleSubmitAnswer}
+                  disabled={!userAnswer.trim()}
+                  className="w-full"
+                >
+                  <Send className="w-4 h-4 mr-2" /> Submit Answer
+                </Button>
+              </>
             )}
           </CardContent>
         </Card>

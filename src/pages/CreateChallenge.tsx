@@ -8,14 +8,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-  ArrowLeft, ArrowRight, Loader2, Sparkles, Save,
+  ArrowLeft, Loader2, Sparkles, Save,
   RefreshCw, PenLine, Target, BookOpen, Lightbulb,
-  CheckCircle2, FileText, Search, Plus
+  CheckCircle2, FileText, Search, FlaskConical, Eye, EyeOff
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePoints } from "@/hooks/usePoints";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import InteractiveLab from "@/components/labs/InteractiveLab";
 
 interface GeneratedChallenge {
   title: string;
@@ -33,11 +34,24 @@ interface GeneratedChallenge {
 }
 
 const CHALLENGE_TYPES = [
-  { value: "problem_solving", label: "Problem Solving", icon: "🧩" },
-  { value: "coding", label: "Coding", icon: "💻" },
-  { value: "explanation", label: "Explanation", icon: "📝" },
-  { value: "multiple_choice", label: "Multiple Choice", icon: "✅" },
-  { value: "lab_interactive", label: "Lab / Interactive", icon: "🔬" },
+  {
+    value: "concept_check",
+    label: "Concept Check",
+    icon: "✅",
+    description: "Quick knowledge verification questions",
+  },
+  {
+    value: "challenge_problem",
+    label: "Challenge Problem",
+    icon: "🧩",
+    description: "Deeper thinking & problem-solving",
+  },
+  {
+    value: "lab_interactive",
+    label: "Lab / Project",
+    icon: "🔬",
+    description: "Hands-on interactive simulation",
+  },
 ];
 
 const DIFFICULTIES = [
@@ -52,16 +66,24 @@ const TOPIC_SUGGESTIONS = [
   "Constitutional Law", "Microeconomics", "Neuroscience", "Urban Planning",
 ];
 
+const GENERATION_STEPS = [
+  { label: "Analyzing topic & difficulty", duration: 2000 },
+  { label: "Generating scenario & objectives", duration: 3000 },
+  { label: "Building interactive lab", duration: 4000 },
+  { label: "Creating hints & solutions", duration: 2500 },
+  { label: "Finalizing challenge structure", duration: 2000 },
+];
+
 export default function CreateChallenge() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { addPoints } = usePoints();
   const { toast } = useToast();
 
-  // Step tracking
   const [step, setStep] = useState<"input" | "generating" | "edit">("input");
+  const [generationStep, setGenerationStep] = useState(0);
 
-  // Step 1 — Input form
+  // Input form
   const [topic, setTopic] = useState("");
   const [skill, setSkill] = useState("");
   const [difficulty, setDifficulty] = useState("medium");
@@ -69,9 +91,10 @@ export default function CreateChallenge() {
   const [extraPrompt, setExtraPrompt] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Step 2/3 — Generated & editable challenge
+  // Generated challenge
   const [challenge, setChallenge] = useState<GeneratedChallenge | null>(null);
   const [saving, setSaving] = useState(false);
+  const [showLabPreview, setShowLabPreview] = useState(true);
 
   const filteredSuggestions = searchQuery
     ? TOPIC_SUGGESTIONS.filter((t) => t.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -85,6 +108,19 @@ export default function CreateChallenge() {
     }
 
     setStep("generating");
+    setGenerationStep(0);
+
+    // Animate through generation steps
+    let stepIndex = 0;
+    const stepInterval = setInterval(() => {
+      stepIndex++;
+      if (stepIndex < GENERATION_STEPS.length) {
+        setGenerationStep(stepIndex);
+      } else {
+        clearInterval(stepInterval);
+      }
+    }, 2500);
+
     try {
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-challenge`, {
         method: "POST",
@@ -101,6 +137,8 @@ export default function CreateChallenge() {
         }),
       });
 
+      clearInterval(stepInterval);
+
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({}));
         throw new Error(err.error || "Failed to generate challenge");
@@ -110,6 +148,7 @@ export default function CreateChallenge() {
       setChallenge(result.challenge_data);
       setStep("edit");
     } catch (error) {
+      clearInterval(stepInterval);
       toast({
         title: "Generation failed",
         description: error instanceof Error ? error.message : "Failed to generate challenge",
@@ -248,22 +287,25 @@ export default function CreateChallenge() {
               </RadioGroup>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label>Challenge Type</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid gap-3">
                 {CHALLENGE_TYPES.map((ct) => (
                   <button
                     key={ct.value}
                     type="button"
                     onClick={() => setChallengeType(ct.value)}
-                    className={`flex items-center gap-2 p-3 rounded-lg border text-sm transition-all text-left ${
+                    className={`flex items-start gap-3 p-4 rounded-xl border text-left transition-all ${
                       challengeType === ct.value
-                        ? "border-accent bg-accent/10 text-accent"
+                        ? "border-accent bg-accent/10 ring-1 ring-accent/30"
                         : "border-border hover:border-muted-foreground/30"
                     }`}
                   >
-                    <span className="text-lg">{ct.icon}</span>
-                    <span className="font-medium">{ct.label}</span>
+                    <span className="text-2xl mt-0.5">{ct.icon}</span>
+                    <div>
+                      <span className="font-semibold text-sm">{ct.label}</span>
+                      <p className="text-xs text-muted-foreground mt-0.5">{ct.description}</p>
+                    </div>
                   </button>
                 ))}
               </div>
@@ -302,23 +344,55 @@ export default function CreateChallenge() {
   // ─── STEP: GENERATING ───
   if (step === "generating") {
     return (
-      <div className="page-container flex flex-col items-center justify-center h-[60vh] gap-4">
+      <div className="page-container flex flex-col items-center justify-center h-[60vh] gap-6">
+        {/* Animated orb */}
         <div className="relative">
-          <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 animate-spin text-accent" />
+          <div className="w-20 h-20 rounded-full bg-accent/10 flex items-center justify-center animate-pulse">
+            <FlaskConical className="w-9 h-9 text-accent" />
           </div>
-          <Sparkles className="absolute -top-1 -right-1 w-5 h-5 text-accent animate-pulse" />
+          <Sparkles className="absolute -top-1 -right-1 w-5 h-5 text-accent animate-bounce" />
         </div>
-        <h2 className="font-display text-xl font-bold">Generating Your Challenge...</h2>
-        <p className="text-muted-foreground text-sm max-w-sm text-center">
-          AI is crafting an interactive challenge about <span className="text-accent font-medium">{topic}</span>
-        </p>
+
+        <div className="text-center space-y-2">
+          <h2 className="font-display text-xl font-bold">Building Your Challenge...</h2>
+          <p className="text-muted-foreground text-sm max-w-sm">
+            Creating an interactive {challengeType === "lab_interactive" ? "lab" : "challenge"} about{" "}
+            <span className="text-accent font-medium">{topic}</span>
+          </p>
+        </div>
+
+        {/* Generation steps */}
+        <div className="w-full max-w-sm space-y-2">
+          {GENERATION_STEPS.map((s, i) => (
+            <div
+              key={i}
+              className={`flex items-center gap-3 text-sm px-4 py-2 rounded-lg transition-all duration-500 ${
+                i < generationStep
+                  ? "text-accent bg-accent/5"
+                  : i === generationStep
+                  ? "text-foreground bg-accent/10 font-medium"
+                  : "text-muted-foreground/40"
+              }`}
+            >
+              {i < generationStep ? (
+                <CheckCircle2 className="w-4 h-4 text-accent shrink-0" />
+              ) : i === generationStep ? (
+                <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+              ) : (
+                <div className="w-4 h-4 rounded-full border border-muted-foreground/20 shrink-0" />
+              )}
+              {s.label}
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   // ─── STEP: EDIT ───
   if (!challenge) return null;
+
+  const hasLab = challenge.lab_type && challenge.lab_data && Object.keys(challenge.lab_data).length > 0;
 
   return (
     <div className="page-container max-w-4xl mx-auto space-y-6 pb-12">
@@ -413,7 +487,7 @@ export default function CreateChallenge() {
         </CardContent>
       </Card>
 
-      {/* Difficulty (editable) */}
+      {/* Difficulty */}
       <Card>
         <CardContent className="pt-6">
           <Label className="mb-3 block">Difficulty</Label>
@@ -477,18 +551,37 @@ export default function CreateChallenge() {
         </CardContent>
       </Card>
 
-      {/* Lab preview info */}
-      {challenge.lab_type && challenge.lab_data && (
-        <Card className="border-accent/20 bg-accent/5">
-          <CardContent className="pt-6 flex items-center gap-3">
-            <span className="text-2xl">🔬</span>
-            <div>
-              <p className="font-semibold text-sm">Interactive Lab Attached</p>
-              <p className="text-xs text-muted-foreground capitalize">
-                Type: {challenge.lab_type.replace(/_/g, " ")} — This lab will be playable when users open the challenge.
-              </p>
-            </div>
-          </CardContent>
+      {/* Interactive Lab Preview */}
+      {hasLab && (
+        <Card className="border-accent/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center justify-between">
+              <span className="flex items-center gap-2 text-muted-foreground">
+                <FlaskConical className="w-4 h-4" /> Interactive Lab Preview
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowLabPreview(!showLabPreview)}
+              >
+                {showLabPreview ? <EyeOff className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
+                {showLabPreview ? "Hide" : "Show"} Preview
+              </Button>
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Type: <span className="capitalize text-accent">{challenge.lab_type.replace(/_/g, " ")}</span> — This is how students will interact with the lab.
+            </p>
+          </CardHeader>
+          {showLabPreview && (
+            <CardContent className="pt-2">
+              <InteractiveLab
+                labType={challenge.lab_type}
+                labData={challenge.lab_data}
+                labTitle={challenge.title}
+                labDescription={challenge.description}
+              />
+            </CardContent>
+          )}
         </Card>
       )}
 
