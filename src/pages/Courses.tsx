@@ -151,7 +151,7 @@ export default function Courses() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="page-container space-y-10">
         {/* Header */}
         <div className="max-w-2xl mx-auto text-center pt-4">
