@@ -1,15 +1,32 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
+// Cache admin status to prevent flicker on route changes
+let cachedAdminStatus: { userId: string; isAdmin: boolean } | null = null;
+
 export function useAdmin() {
   const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(() => {
+    if (user && cachedAdminStatus?.userId === user.id) return cachedAdminStatus.isAdmin;
+    return false;
+  });
+  const [loading, setLoading] = useState(() => {
+    if (user && cachedAdminStatus?.userId === user.id) return false;
+    return true;
+  });
 
   useEffect(() => {
     if (!user) {
       setIsAdmin(false);
+      setLoading(false);
+      cachedAdminStatus = null;
+      return;
+    }
+
+    // If we already have a cached result for this user, skip the query
+    if (cachedAdminStatus?.userId === user.id) {
+      setIsAdmin(cachedAdminStatus.isAdmin);
       setLoading(false);
       return;
     }
@@ -21,7 +38,9 @@ export function useAdmin() {
         .eq("user_id", user.id)
         .eq("role", "admin");
 
-      setIsAdmin(!!(data && data.length > 0));
+      const admin = !!(data && data.length > 0);
+      cachedAdminStatus = { userId: user.id, isAdmin: admin };
+      setIsAdmin(admin);
       setLoading(false);
     };
 
