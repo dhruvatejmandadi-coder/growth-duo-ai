@@ -48,8 +48,17 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
-  const { isAdmin } = useAdmin();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { isAdmin, loading: adminLoading } = useAdmin();
+
+  // Use cached/previous state while loading to prevent flicker
+  const effectiveUser = authLoading ? null : user;
+  // During auth loading, assume user is logged in if we're on a dashboard route
+  // to prevent sidebar flash
+  const isDashboardRoute = ["/courses", "/challenges", "/community", "/progress", "/profile", "/admin", "/pricing"].some(
+    (p) => location.pathname.startsWith(p)
+  );
+  const showAuthedUI = user || (authLoading && isDashboardRoute);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -58,13 +67,13 @@ export function AppSidebar() {
     navigate("/login");
   };
 
-  const mainItems = user ? authedMainItems : guestItems;
+  const mainItems = showAuthedUI ? authedMainItems : guestItems;
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/60">
       {/* Logo in sidebar header */}
       <SidebarHeader className="px-4 py-5 border-b border-border/40">
-        <NavLink to={user ? "/courses" : "/"} className="flex items-center gap-2">
+        <NavLink to={showAuthedUI ? "/courses" : "/"} className="flex items-center gap-2">
           <img src={rependLogo} alt="Repend" className="h-7 w-auto object-contain" />
         </NavLink>
       </SidebarHeader>
@@ -72,7 +81,7 @@ export function AppSidebar() {
       <SidebarContent className="pt-2">
         <SidebarGroup>
           <SidebarGroupLabel className={cn("text-[11px] uppercase tracking-widest text-muted-foreground/60 font-medium", collapsed && "sr-only")}>
-            {user ? "Navigation" : "Explore"}
+            {showAuthedUI ? "Navigation" : "Explore"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -102,7 +111,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {user && isAdmin && (
+        {showAuthedUI && isAdmin && (
           <SidebarGroup>
             <SidebarGroupLabel className={cn("text-[11px] uppercase tracking-widest text-muted-foreground/60 font-medium", collapsed && "sr-only")}>
               Admin
@@ -134,7 +143,7 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {user && (
+        {showAuthedUI && (
           <SidebarGroup>
             <SidebarGroupLabel className={cn("text-[11px] uppercase tracking-widest text-muted-foreground/60 font-medium", collapsed && "sr-only")}>
               Personal
@@ -171,7 +180,7 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-3 border-t border-border/40">
         <SidebarMenu>
-          {user && (
+          {showAuthedUI && (
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
@@ -186,7 +195,7 @@ export function AppSidebar() {
             </SidebarMenuItem>
           )}
           <SidebarMenuItem>
-            {user ? (
+            {showAuthedUI ? (
               <SidebarMenuButton
                 tooltip="Sign Out"
                 onClick={handleSignOut}
