@@ -12,6 +12,7 @@ import CourseView from "./pages/CourseView";
 import Community from "./pages/Community";
 import Challenges from "./pages/Challenges";
 import ChallengeView from "./pages/ChallengeView";
+import CreateChallenge from "./pages/CreateChallenge";
 import ProgressPage from "./pages/ProgressPage";
 
 import Profile from "./pages/Profile";
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/courses/:id" element={<CourseView />} />
               <Route path="/community" element={<Community />} />
               <Route path="/challenges" element={<Challenges />} />
+              <Route path="/challenges/create" element={<CreateChallenge />} />
               <Route path="/challenges/:id" element={<ChallengeView />} />
               <Route path="/progress" element={<ProgressPage />} />
               <Route path="/pricing" element={<Pricing />} />
