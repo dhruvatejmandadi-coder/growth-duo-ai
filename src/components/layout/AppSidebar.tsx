@@ -180,7 +180,7 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-3 border-t border-border/40">
         <SidebarMenu>
-          {user && (
+          {showAuthedUI && (
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
