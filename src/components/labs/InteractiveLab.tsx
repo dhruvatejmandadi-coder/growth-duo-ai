@@ -316,6 +316,13 @@ export default function InteractiveLab({ labType, labData, labTitle, labDescript
     return <DecisionLab data={labData} onComplete={onComplete} isCompleted={isCompleted} />;
   }
 
+  // Math Lab
+  if (labType === "math_lab") {
+    const hasData = labData?.tasks?.length > 0 && labData?.visual_type;
+    if (!hasData) return <LabEmptyState labType={labType} />;
+    return <MathLab data={labData} onComplete={onComplete} isCompleted={isCompleted} />;
+  }
+
   // Default: Simulation
   const hasSimulationData = labData?.parameters?.length > 0;
   if (!hasSimulationData) return <LabEmptyState labType={labType} />;
