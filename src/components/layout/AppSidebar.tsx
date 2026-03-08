@@ -67,13 +67,13 @@ export function AppSidebar() {
     navigate("/login");
   };
 
-  const mainItems = user ? authedMainItems : guestItems;
+  const mainItems = showAuthedUI ? authedMainItems : guestItems;
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/60">
       {/* Logo in sidebar header */}
       <SidebarHeader className="px-4 py-5 border-b border-border/40">
-        <NavLink to={user ? "/courses" : "/"} className="flex items-center gap-2">
+        <NavLink to={showAuthedUI ? "/courses" : "/"} className="flex items-center gap-2">
           <img src={rependLogo} alt="Repend" className="h-7 w-auto object-contain" />
         </NavLink>
       </SidebarHeader>
@@ -81,7 +81,7 @@ export function AppSidebar() {
       <SidebarContent className="pt-2">
         <SidebarGroup>
           <SidebarGroupLabel className={cn("text-[11px] uppercase tracking-widest text-muted-foreground/60 font-medium", collapsed && "sr-only")}>
-            {user ? "Navigation" : "Explore"}
+            {showAuthedUI ? "Navigation" : "Explore"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
