@@ -297,7 +297,8 @@ function generateDecisionLabFallback(title: string) {
     },
   };
 }
-   🔧 REPAIR MODULES
+/* ===============================
+   REPAIR MODULES
 ================================ */
 
 function repairModules(parsed: any) {
