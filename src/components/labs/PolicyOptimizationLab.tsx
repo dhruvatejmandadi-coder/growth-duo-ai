@@ -50,7 +50,7 @@ function checkConstraint(c: Constraint, value: number): boolean {
   }
 }
 
-export default function PolicyOptimizationLab({ data }: { data: PolicyData }) {
+export default function PolicyOptimizationLab({ data, onComplete }: { data: PolicyData; onComplete?: () => void }) {
   const parameters = data.parameters ?? [];
   const constraints = data.constraints ?? [];
   const decisions = data.decisions ?? [];
@@ -73,6 +73,12 @@ export default function PolicyOptimizationLab({ data }: { data: PolicyData }) {
 
   const allMet = constraintResults.every((c) => c.met);
   const isFinished = decisionsMade.length >= maxDecisions || decisionsMade.length >= decisions.length;
+
+  const [completionFired, setCompletionFired] = useState(false);
+  if (isFinished && !completionFired && onComplete) {
+    onComplete();
+    setCompletionFired(true);
+  }
 
   const handleChoice = (choiceIdx: number) => {
     const choice = decisions[currentDecision]?.choices[choiceIdx];

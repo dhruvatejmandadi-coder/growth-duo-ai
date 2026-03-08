@@ -39,7 +39,7 @@ type ClassificationData = {
   items: Item[];
 };
 
-export default function ClassificationLab({ data }: { data: ClassificationData }) {
+export default function ClassificationLab({ data, onComplete }: { data: ClassificationData; onComplete?: () => void }) {
   // Normalize field names from AI output to component format
   const items: Item[] = (data?.items ?? []).map((raw: RawItem) => ({
     name: raw.name || raw.content || "Unknown item",
@@ -69,10 +69,18 @@ export default function ClassificationLab({ data }: { data: ClassificationData }
     ? items.filter((it) => assignments[it.name] === it.correct_category).length
     : 0;
 
+  // Fire onComplete when submitted
+  const [completionFired, setCompletionFired] = useState(false);
+  if (submitted && !completionFired && onComplete) {
+    onComplete();
+    setCompletionFired(true);
+  }
+
   const reset = () => {
     setAssignments({});
     setCurrentItem(0);
     setSubmitted(false);
+    setCompletionFired(false);
   };
 
   if (!items.length || !categories.length) {

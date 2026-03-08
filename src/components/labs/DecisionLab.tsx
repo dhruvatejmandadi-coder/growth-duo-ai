@@ -38,7 +38,7 @@ type Phase = "scenario" | "respond" | "feedback" | "twist" | "twist_feedback" | 
 
 /* ===== COMPONENT ===== */
 
-export default function DecisionLab({ data }: { data: DecisionLabData }) {
+export default function DecisionLab({ data, onComplete }: { data: DecisionLabData; onComplete?: () => void }) {
   const [phase, setPhase] = useState<Phase>("scenario");
   const [response, setResponse] = useState<StudentResponse>({ strategy: "", core_assumption: "", biggest_risk: "" });
   const [twistResponse, setTwistResponse] = useState("");
@@ -100,7 +100,7 @@ export default function DecisionLab({ data }: { data: DecisionLabData }) {
       return;
     }
     const fb = await getAIFeedback("reflection");
-    if (fb) { setFinalFeedback(fb); setPhase("final"); }
+    if (fb) { setFinalFeedback(fb); setPhase("final"); if (onComplete) onComplete(); }
   };
 
   const reset = () => {

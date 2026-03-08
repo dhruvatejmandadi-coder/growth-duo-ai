@@ -27,7 +27,7 @@ type EthicalData = {
   decisions: Decision[];
 };
 
-export default function EthicalDilemmaLab({ data }: { data: EthicalData }) {
+export default function EthicalDilemmaLab({ data, onComplete }: { data: EthicalData; onComplete?: () => void }) {
   const dimensions = data.dimensions ?? [];
   const decisions = data.decisions ?? [];
 
@@ -38,6 +38,12 @@ export default function EthicalDilemmaLab({ data }: { data: EthicalData }) {
   const [currentDecision, setCurrentDecision] = useState(0);
 
   const allDone = Object.keys(answered).length === decisions.length;
+
+  const [completionFired, setCompletionFired] = useState(false);
+  if (allDone && !completionFired && onComplete) {
+    onComplete();
+    setCompletionFired(true);
+  }
 
   const handleChoice = (choiceIdx: number) => {
     if (answered[currentDecision] !== undefined) return;

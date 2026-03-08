@@ -44,6 +44,8 @@ type Props = {
   labData?: any;
   labTitle?: string | null;
   labDescription?: string | null;
+  onComplete?: () => void;
+  isCompleted?: boolean;
 };
 
 /* ================= HELPERS ================= */
@@ -86,7 +88,7 @@ function ensureDecisionSetState(decisions: Decision[], parameters: Parameter[]):
 
 /* ================= SIMULATION ================= */
 
-function SimulationLabInline({ data }: { data: SimulationData }) {
+function SimulationLabInline({ data, onComplete }: { data: SimulationData; onComplete?: () => void }) {
   const parameters = useMemo(() => data.parameters ?? [], [data]);
   const thresholds = useMemo(() => data.thresholds ?? [], [data]);
   const rawDecisions = useMemo(() => data.decisions ?? [], [data]);
@@ -137,11 +139,21 @@ function SimulationLabInline({ data }: { data: SimulationData }) {
 
   const allDone = decisions.length > 0 && Object.keys(answered).length === decisions.length;
 
+  // Fire completion callback once
+  const [completionFired, setCompletionFired] = useState(false);
+  useEffect(() => {
+    if (allDone && !completionFired && onComplete) {
+      onComplete();
+      setCompletionFired(true);
+    }
+  }, [allDone, completionFired, onComplete]);
+
   const reset = () => {
     const initial = Object.fromEntries(parameters.map((p) => [p.name, p.default]));
     setValues(initial);
     setCurrentDecision(0);
     setAnswered({});
+    setCompletionFired(false);
   };
 
   return (
@@ -254,7 +266,7 @@ function LabEmptyState({ labType }: { labType?: string | null }) {
 
 /* ================= MAIN ROUTER ================= */
 
-export default function InteractiveLab({ labType, labData, labTitle, labDescription }: Props) {
+export default function InteractiveLab({ labType, labData, labTitle, labDescription, onComplete, isCompleted }: Props) {
   if (!labData || (typeof labData === "object" && Object.keys(labData).length === 0)) {
     return <LabEmptyState labType={labType} />;
   }
@@ -263,32 +275,32 @@ export default function InteractiveLab({ labType, labData, labTitle, labDescript
   if (labType === "classification") {
     const hasData = labData?.items?.length > 0 && labData?.categories?.length > 0;
     if (!hasData) return <LabEmptyState labType={labType} />;
-    return <ClassificationLab data={labData} />;
+    return <ClassificationLab data={labData} onComplete={onComplete} />;
   }
 
   // Policy Optimization
   if (labType === "policy_optimization") {
     const hasData = labData?.parameters?.length > 0 && labData?.constraints?.length > 0;
     if (!hasData) return <LabEmptyState labType={labType} />;
-    return <PolicyOptimizationLab data={labData} />;
+    return <PolicyOptimizationLab data={labData} onComplete={onComplete} />;
   }
 
   // Ethical Dilemma
   if (labType === "ethical_dilemma") {
     const hasData = labData?.dimensions?.length > 0 && labData?.decisions?.length > 0;
     if (!hasData) return <LabEmptyState labType={labType} />;
-    return <EthicalDilemmaLab data={labData} />;
+    return <EthicalDilemmaLab data={labData} onComplete={onComplete} />;
   }
 
   // Decision Lab
   if (labType === "decision_lab") {
     const hasData = labData?.scenario && labData?.constraints?.length > 0 && labData?.decision_prompt;
     if (!hasData) return <LabEmptyState labType={labType} />;
-    return <DecisionLab data={labData} />;
+    return <DecisionLab data={labData} onComplete={onComplete} />;
   }
 
   // Default: Simulation
   const hasSimulationData = labData?.parameters?.length > 0;
   if (!hasSimulationData) return <LabEmptyState labType={labType} />;
-  return <SimulationLabInline data={labData} />;
+  return <SimulationLabInline data={labData} onComplete={onComplete} />;
 }
