@@ -381,6 +381,11 @@ IMPORTANT: Generate a COMPLETE, PLAYABLE interactive lab with all required field
       throw new Error("AI returned incomplete challenge data");
     }
 
+    // ── Force math_lab for math topics ──
+    if (isMath && challengeData.lab_type !== "math_lab") {
+      challengeData.lab_type = "math_lab";
+    }
+
     // ── Apply defaults ──
     if (!labTypes.includes(challengeData.lab_type)) challengeData.lab_type = "simulation";
     if (!challengeData.hints || !Array.isArray(challengeData.hints)) {
