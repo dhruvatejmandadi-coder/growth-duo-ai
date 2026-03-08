@@ -8,7 +8,21 @@ const corsHeaders = {
 
 /* ── Challenge type → prompt strategy mapping ── */
 
-function buildSystemPrompt(challengeType: string, labTypes: string[]): string {
+function isMathTopic(topic: string): boolean {
+  const mathKeywords = [
+    "math", "algebra", "geometry", "calculus", "trigonometry", "statistics",
+    "equation", "function", "graph", "polynomial", "quadratic", "linear",
+    "derivative", "integral", "matrix", "vector", "probability", "fraction",
+    "exponent", "logarithm", "inequality", "triangle", "circle", "angle",
+    "theorem", "arithmetic", "number theory", "combinatorics", "slope",
+    "intercept", "vertex", "parabola", "hyperbola", "sine", "cosine",
+    "tangent", "factoring", "simplif", "expression", "coordinate",
+  ];
+  const lower = topic.toLowerCase();
+  return mathKeywords.some((kw) => lower.includes(kw));
+}
+
+function buildSystemPrompt(challengeType: string, labTypes: string[], isMath: boolean): string {
   const baseRules = `You are an interactive learning challenge generator for a cognitive simulation platform.
 Given a topic, create an engaging challenge with full structured content.
 
@@ -23,6 +37,71 @@ You MUST generate ALL of these fields:
 - solution_explanation: Detailed explanation of why this is the solution
 - difficulty: "easy", "medium", or "hard"
 - challenge_type: The type of challenge`;
+
+  // ── MATH LAB: specialized math generator ──
+  if (isMath) {
+    return `${baseRules}
+- lab_type: MUST be "math_lab"
+- lab_data: A complete math lab with visual representations
+
+You are generating a MATH LAB. This is a specialized interactive math experience.
+
+The lab_data MUST contain ALL of these fields:
+- title: Lab title
+- objective: What math skill the student will practice
+- concept_overview: 2-4 sentence explanation of the math concept
+- visual_type: One of "graph", "geometry", "solution_steps", "chart"
+- scenario: A real-world scenario where this math concept applies
+- instructions: Step-by-step lab instructions
+- tasks: Array of 3-5 tasks (each with id, description, type, correct_answer)
+- hints: Array of 2 hint strings
+- solution: The correct answer
+- solution_explanation: Step-by-step explanation
+
+VISUAL TYPE SELECTION RULES:
+- If the topic involves functions, equations, graphing, slopes, intercepts → visual_type = "graph"
+- If the topic involves shapes, angles, triangles, circles, polygons → visual_type = "geometry"
+- If the topic involves solving equations step-by-step → visual_type = "solution_steps"
+- If the topic involves data, statistics, probability → visual_type = "chart"
+
+FOR visual_type = "graph", lab_data MUST include graph_data:
+{
+  "type": "function" or "scatter" or "bar",
+  "equation": "x^2 - 4*x + 3" (JavaScript math expression using x),
+  "x_label": "x",
+  "y_label": "y",
+  "x_range": [-5, 10],
+  "y_range": [-5, 15],
+  "key_points": [{"x": 2, "y": -1, "label": "Vertex (2,-1)"}, {"x": 1, "y": 0, "label": "Root (1,0)"}]
+}
+IMPORTANT: The equation must be a valid JavaScript math expression. Use * for multiplication, ^ for exponents. Examples:
+- "x^2 - 4*x + 3" for quadratics
+- "2*x + 1" for linear
+- "Math.sin(x)" for trig
+- "Math.abs(x)" for absolute value
+
+FOR visual_type = "geometry", lab_data MUST include geometry (array of shapes):
+[{
+  "type": "triangle",
+  "points": [{"x": 1, "y": 1, "label": "A"}, {"x": 5, "y": 1, "label": "B"}, {"x": 3, "y": 7, "label": "C"}],
+  "measurements": {"AB": "4 units", "BC": "6.3 units", "angle_B": "45°"}
+}]
+Points must be in range 0-10 for proper rendering.
+
+FOR visual_type = "solution_steps", lab_data MUST include solution_steps:
+[{"step": 1, "expression": "2x + 5 = 15", "explanation": "Start with the original equation"},
+ {"step": 2, "expression": "2x = 10", "explanation": "Subtract 5 from both sides"}]
+
+FOR visual_type = "chart", lab_data MUST include graph_data:
+{"type": "bar", "data_labels": ["A", "B", "C"], "data_values": [10, 25, 15], "x_label": "Category", "y_label": "Value"}
+
+TASK FORMAT:
+Each task must have: id (number), description (string), type ("input" | "choice" | "explanation"), correct_answer (string)
+For choice tasks, also include options (array of 3-4 strings).
+Tasks should progress from easier to harder.
+
+Return the result using the create_challenge_full function.`;
+  }
 
   // ── Lab / Interactive: MUST generate full interactive lab ──
   if (challengeType === "lab_interactive") {
@@ -210,19 +289,21 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const labTypes = ["simulation", "classification", "ethical_dilemma", "policy_optimization", "decision_lab"];
+    const labTypes = ["simulation", "classification", "ethical_dilemma", "policy_optimization", "decision_lab", "math_lab"];
     const diff = difficulty || "medium";
     const cType = challenge_type || "lab_interactive";
     const skillText = skill ? `\nSkill/concept: ${skill}` : "";
     const extraText = extra_prompt ? `\nAdditional instructions: ${extra_prompt}` : "";
 
+    const isMath = isMathTopic(mainTopic.trim() + " " + (skill || ""));
+
     const userPrompt = `Create an interactive learning challenge about: ${mainTopic.trim()}
 Difficulty: ${diff}
 Challenge type: ${cType}${skillText}${extraText}
-
+${isMath ? "\nThis is a MATH topic. You MUST use lab_type = 'math_lab' and include the appropriate visual representation (graph, geometry diagram, solution steps, or chart)." : ""}
 IMPORTANT: Generate a COMPLETE, PLAYABLE interactive lab with all required fields.`;
 
-    const systemPrompt = buildSystemPrompt(cType, labTypes);
+    const systemPrompt = buildSystemPrompt(cType, labTypes, isMath);
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -300,6 +381,11 @@ IMPORTANT: Generate a COMPLETE, PLAYABLE interactive lab with all required field
       throw new Error("AI returned incomplete challenge data");
     }
 
+    // ── Force math_lab for math topics ──
+    if (isMath && challengeData.lab_type !== "math_lab") {
+      challengeData.lab_type = "math_lab";
+    }
+
     // ── Apply defaults ──
     if (!labTypes.includes(challengeData.lab_type)) challengeData.lab_type = "simulation";
     if (!challengeData.hints || !Array.isArray(challengeData.hints)) {
@@ -362,6 +448,27 @@ IMPORTANT: Generate a COMPLETE, PLAYABLE interactive lab with all required field
         ];
       }
       if (!challengeData.lab_data.max_moves) challengeData.lab_data.max_moves = 4;
+    }
+
+    // ── Repair math_lab data ──
+    if (challengeData.lab_type === "math_lab" && challengeData.lab_data) {
+      const ld = challengeData.lab_data;
+      if (!ld.title) ld.title = challengeData.title;
+      if (!ld.objective) ld.objective = challengeData.objective || "";
+      if (!ld.concept_overview) ld.concept_overview = challengeData.description || "";
+      if (!ld.visual_type) ld.visual_type = "graph";
+      if (!ld.tasks || !Array.isArray(ld.tasks) || ld.tasks.length === 0) {
+        ld.tasks = [
+          { id: 1, description: "Analyze the visual representation.", type: "explanation", correct_answer: "" },
+          { id: 2, description: "Identify the key values.", type: "input", correct_answer: "" },
+          { id: 3, description: "Explain the concept in your own words.", type: "explanation", correct_answer: "" },
+        ];
+      }
+      // Ensure task ids
+      ld.tasks.forEach((t: any, i: number) => { if (!t.id) t.id = i + 1; });
+      if (!ld.hints || !Array.isArray(ld.hints)) ld.hints = challengeData.hints || ["Think step by step.", "Review the visual."];
+      if (!ld.solution) ld.solution = challengeData.solution || "";
+      if (!ld.solution_explanation) ld.solution_explanation = challengeData.solution_explanation || "";
     }
 
     console.log("Generated challenge:", challengeData.lab_type, "with", Object.keys(challengeData.lab_data).length, "lab fields");

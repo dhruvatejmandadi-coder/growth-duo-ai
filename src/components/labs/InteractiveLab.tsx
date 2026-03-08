@@ -8,6 +8,7 @@ import ClassificationLab from "./ClassificationLab";
 import PolicyOptimizationLab from "./PolicyOptimizationLab";
 import EthicalDilemmaLab from "./EthicalDilemmaLab";
 import DecisionLab from "./DecisionLab";
+import MathLab from "./MathLab";
 
 /* ================= TYPES ================= */
 
@@ -313,6 +314,13 @@ export default function InteractiveLab({ labType, labData, labTitle, labDescript
     const hasData = labData?.scenario && labData?.constraints?.length > 0 && labData?.decision_prompt;
     if (!hasData) return <LabEmptyState labType={labType} />;
     return <DecisionLab data={labData} onComplete={onComplete} isCompleted={isCompleted} />;
+  }
+
+  // Math Lab
+  if (labType === "math_lab") {
+    const hasData = labData?.tasks?.length > 0 && labData?.visual_type;
+    if (!hasData) return <LabEmptyState labType={labType} />;
+    return <MathLab data={labData} onComplete={onComplete} isCompleted={isCompleted} />;
   }
 
   // Default: Simulation

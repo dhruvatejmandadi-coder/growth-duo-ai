@@ -20,7 +20,7 @@ const CourseSchema = z.object({
       lesson_content: z.string(),
       youtube_query: z.string().optional(),
       youtube_title: z.string().optional(),
-      lab_type: z.enum(["simulation", "classification", "policy_optimization", "ethical_dilemma", "decision_lab"]),
+      lab_type: z.enum(["simulation", "classification", "policy_optimization", "ethical_dilemma", "decision_lab", "math_lab"]),
       lab_data: z.any(),
       quiz: z.array(
         z.object({
@@ -441,10 +441,35 @@ function repairModules(parsed: any) {
           if (!dim.description) dim.description = "";
         }
       }
-    } else if (mod.lab_type === "decision_lab") {
-      if (!isValidDecisionLab(ld)) {
-        console.warn(`[RepairModules] decision_lab fallback generated for: "${title}"`);
-        mod.lab_data = generateDecisionLabFallback(title);
+    } else if (mod.lab_type === "math_lab") {
+      // Math lab — ensure required fields
+      const mld = mod.lab_data;
+      if (!mld || !mld.tasks || !Array.isArray(mld.tasks) || mld.tasks.length === 0) {
+        console.warn(`[RepairModules] math_lab fallback for: "${title}"`);
+        mod.lab_data = {
+          title: title,
+          objective: `Practice ${title} concepts`,
+          concept_overview: `This lab explores key concepts from ${title}.`,
+          visual_type: "solution_steps",
+          solution_steps: [
+            { step: 1, expression: "Step 1", explanation: "Set up the problem" },
+            { step: 2, expression: "Step 2", explanation: "Apply the concept" },
+            { step: 3, expression: "Step 3", explanation: "Solve for the answer" },
+          ],
+          instructions: "Follow the steps and complete all tasks below.",
+          tasks: [
+            { id: 1, description: `Identify the key concept in ${title}.`, type: "explanation", correct_answer: "" },
+            { id: 2, description: "Solve the problem step by step.", type: "input", correct_answer: "" },
+            { id: 3, description: "Explain why your answer is correct.", type: "explanation", correct_answer: "" },
+          ],
+          hints: ["Break the problem into smaller parts.", "Review the concept overview."],
+          solution: "See explanation.",
+          solution_explanation: `Review the ${title} concepts covered in the lesson.`,
+        };
+      } else {
+        if (!mld.title) mld.title = title;
+        if (!mld.visual_type) mld.visual_type = "solution_steps";
+        mld.tasks.forEach((t: any, i: number) => { if (!t.id) t.id = i + 1; });
       }
     }
 
@@ -454,7 +479,8 @@ function repairModules(parsed: any) {
       (mod.lab_type === "classification" && isValidClassification(mod.lab_data)) ||
       (mod.lab_type === "policy_optimization" && isValidPolicyOptimization(mod.lab_data)) ||
       (mod.lab_type === "ethical_dilemma" && isValidEthicalDilemma(mod.lab_data)) ||
-      (mod.lab_type === "decision_lab" && isValidDecisionLab(mod.lab_data));
+      (mod.lab_type === "decision_lab" && isValidDecisionLab(mod.lab_data)) ||
+      (mod.lab_type === "math_lab" && mod.lab_data?.tasks?.length > 0);
 
     if (!finalValid) {
       console.error(`[RepairModules] FINAL GUARD - Forced simulation for: "${title}"`);
@@ -605,7 +631,7 @@ CRITICAL MODULE STRUCTURE — every module MUST have ALL of these fields:
 - lesson_content: string (slide-based markdown, see LESSON CONTENT FORMAT below)
 - youtube_query: string (search query to find a relevant video)
 - youtube_title: string
-- lab_type: one of "simulation", "classification", "policy_optimization", "ethical_dilemma"
+- lab_type: one of "simulation", "classification", "policy_optimization", "ethical_dilemma", "decision_lab", "math_lab"
 - lab_data: object (format depends on lab_type, see below)
 - quiz: array of {question, options: string[4], correct: number 0-3, explanation}
 
@@ -664,9 +690,41 @@ Choose lab_type based on the topic's cognitive nature:
 - "classification" → for analytical/sorting topics (categorization, identification, prioritization)
 - "policy_optimization" → for strategic/constraint topics (reaching targets within limits)
 - "ethical_dilemma" → for ethical/moral topics (tradeoff decisions with no perfect answer)
-- "decision_lab" → for strategic reasoning, business, negotiation, product design, engineering decisions — ANY topic requiring free-text strategic thinking with AI critique
+- "decision_lab" → for strategic reasoning, business, negotiation, product design, engineering decisions
+- "math_lab" → ONLY for math topics (algebra, geometry, calculus, statistics, trigonometry, equations, graphing)
 
-PREFER decision_lab for at least 1-2 modules per course. Mix lab types across modules. Do NOT use the same lab_type for every module.
+MATH LAB RULE: If the course topic is math-related, use "math_lab" for ALL modules. Math topics include algebra, geometry, calculus, statistics, trigonometry, equations, graphing, number theory, etc.
+
+For math_lab, lab_data format:
+{
+  "title": "Lab title",
+  "objective": "What math skill the student will practice",
+  "concept_overview": "2-4 sentence explanation of the concept",
+  "visual_type": "graph" | "geometry" | "solution_steps" | "chart",
+  "graph_data": { (for graph/chart types)
+    "type": "function" | "scatter" | "bar",
+    "equation": "x^2 - 4*x + 3", (JS math expression)
+    "x_label": "x", "y_label": "y",
+    "x_range": [-5, 10], "y_range": [-5, 15],
+    "key_points": [{"x": 2, "y": -1, "label": "Vertex"}]
+  },
+  "geometry": [{ (for geometry type)
+    "type": "triangle",
+    "points": [{"x": 1, "y": 1, "label": "A"}],
+    "measurements": {"AB": "4 units"}
+  }],
+  "solution_steps": [{ (for solution_steps type)
+    "step": 1, "expression": "2x + 5 = 15", "explanation": "Original equation"
+  }],
+  "scenario": "Real-world application scenario",
+  "instructions": "Step-by-step lab instructions",
+  "tasks": [{"id": 1, "description": "task text", "type": "input"|"choice"|"explanation", "correct_answer": "answer"}],
+  "hints": ["hint 1", "hint 2"],
+  "solution": "correct answer",
+  "solution_explanation": "step-by-step explanation"
+}
+
+PREFER decision_lab for at least 1-2 modules per course (unless it's a math course). Mix lab types across modules. Do NOT use the same lab_type for every module (except math courses which should always use math_lab).
 
 === SIMULATION LAB (lab_type: "simulation") ===
 lab_data format:
@@ -794,7 +852,7 @@ Generate 4-6 modules with a good mix of lab types. Include at least 1-2 decision
                         lesson_content: { type: "string", description: "Markdown lesson with --- slide separators" },
                         youtube_query: { type: "string" },
                         youtube_title: { type: "string" },
-                        lab_type: { type: "string", enum: ["simulation", "classification", "policy_optimization", "ethical_dilemma", "decision_lab"] },
+                        lab_type: { type: "string", enum: ["simulation", "classification", "policy_optimization", "ethical_dilemma", "decision_lab", "math_lab"] },
                         lab_data: { type: "object", description: "Lab configuration object" },
                         quiz: {
                           type: "array",
