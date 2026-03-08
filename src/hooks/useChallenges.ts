@@ -13,6 +13,8 @@ export interface Challenge {
   user_id: string | null;
   lab_type: string | null;
   lab_data: any;
+  author_name?: string | null;
+  author_avatar_url?: string | null;
 }
 
 export function useChallenges() {
