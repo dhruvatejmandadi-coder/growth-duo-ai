@@ -66,6 +66,7 @@ export default function CourseView() {
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingQuizAttempt, setLoadingQuizAttempt] = useState(false);
 
   useEffect(() => {
     if (id) fetchCourse();
