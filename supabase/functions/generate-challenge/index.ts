@@ -6,6 +6,170 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/* ── Challenge type → prompt strategy mapping ── */
+
+function buildSystemPrompt(challengeType: string, labTypes: string[]): string {
+  const baseRules = `You are an interactive learning challenge generator for a cognitive simulation platform.
+Given a topic, create an engaging challenge with full structured content.
+
+You MUST generate ALL of these fields:
+- title: Challenge title (max 80 chars)
+- description: Short summary (max 300 chars)
+- objective: What the learner should practice (1-2 sentences)
+- instructions: Step-by-step instructions for the challenge (use numbered steps)
+- problem: The actual challenge problem statement (detailed, real-world scenario)
+- hints: Array of exactly 2 hint strings
+- solution: The expected answer or solution
+- solution_explanation: Detailed explanation of why this is the solution
+- difficulty: "easy", "medium", or "hard"
+- challenge_type: The type of challenge`;
+
+  // ── Lab / Interactive: MUST generate full interactive lab ──
+  if (challengeType === "lab_interactive") {
+    return `${baseRules}
+- lab_type: Choose from ${labTypes.join(", ")}
+- lab_data: Structured lab data matching the lab_type schema
+
+YOU ARE GENERATING A HANDS-ON INTERACTIVE LAB. This is the most important part.
+The lab_data MUST be complete and playable.
+
+Guidelines for lab type selection:
+- "simulation": For causal/systemic topics. Students adjust parameters and see outcomes.
+- "classification": For analytical/sorting topics. Students categorize items correctly.
+- "ethical_dilemma": For moral/ethical topics. Every choice has tradeoffs across dimensions.
+- "policy_optimization": For strategy/constraint topics. Students must hit targets within limits.
+- "decision_lab": For complex reasoning. Students analyze scenarios and make decisions.
+
+CRITICAL RULES FOR LAB DATA:
+
+For "simulation" type:
+- Exactly 3 parameters with name, icon (emoji), unit, min (0), max (100), default (40-60)
+- Exactly 3 thresholds with label, min_percent, message
+- 2-4 decisions, each with a question, emoji, and 2-3 choices
+- EVERY choice MUST have set_state with ALL 3 parameter names as keys and values 0-100
+
+For "classification" type:
+- 5-8 items with name, description
+- 2-4 categories with name, description
+- correct_mapping object mapping every item name to its correct category name
+
+For "ethical_dilemma" type:
+- 3-4 dimensions with name, icon (emoji), description, initial_value (40-60)
+- 2-4 decisions with scenario, emoji, and 2-3 options
+- Each option has label, description, and impacts (dimension name → number change, e.g. +15 or -10)
+
+For "policy_optimization" type:
+- 3-4 parameters with name, icon (emoji), unit, min (0), max (100), default, step (5-10)
+- 2-4 constraints with description
+- 2-3 targets with name, operator (">=", "<="), value, unit
+- max_moves: 3-5
+
+For "decision_lab" type:
+- scenario: detailed scenario text (at least 3 sentences)
+- 3-4 constraints (strings)
+- decision_prompt: what the user must decide
+- considerations: 3-4 key factors to weigh
+
+Return the result using the create_challenge_full function.`;
+  }
+
+  // ── Concept Check: Quick knowledge questions ──
+  if (challengeType === "concept_check") {
+    return `${baseRules}
+- lab_type: "classification"
+- lab_data: A classification lab that tests conceptual understanding
+
+Generate a classification-style lab where students must sort or categorize concepts correctly.
+Use 5-8 items and 2-4 categories. Include correct_mapping for all items.
+The problem should be a quick conceptual check, not a deep problem.
+
+Return the result using the create_challenge_full function.`;
+  }
+
+  // ── Challenge Problem: Deeper thinking, optional lab ──
+  return `${baseRules}
+- lab_type: Choose from ${labTypes.join(", ")}
+- lab_data: Structured lab data matching the lab_type schema
+
+Generate a challenge that requires deeper thinking and problem-solving.
+Include a full interactive lab that reinforces the problem.
+Prefer "simulation" or "ethical_dilemma" lab types for challenge problems.
+
+CRITICAL RULES FOR LAB DATA:
+
+For "simulation" type:
+- Exactly 3 parameters with name, icon (emoji), unit, min (0), max (100), default (40-60)
+- Exactly 3 thresholds with label, min_percent, message
+- 2-4 decisions, each with a question, emoji, and 2-3 choices
+- EVERY choice MUST have set_state with ALL 3 parameter names as keys and values 0-100
+
+For "classification" type:
+- 5-8 items with name, description
+- 2-4 categories with name, description
+- correct_mapping object mapping every item name to its correct category name
+
+For "ethical_dilemma" type:
+- 3-4 dimensions with name, icon (emoji), description, initial_value (40-60)
+- 2-4 decisions with scenario, emoji, and 2-3 options
+- Each option has label, description, and impacts (dimension name → number change)
+
+For "policy_optimization" type:
+- 3-4 parameters with name, icon (emoji), unit, min (0), max (100), default, step (5-10)
+- 2-4 constraints with description
+- 2-3 targets with name, operator (">=", "<="), value, unit
+- max_moves: 3-5
+
+For "decision_lab" type:
+- scenario: detailed scenario text
+- 3-4 constraints (strings)
+- decision_prompt: what the user must decide
+- considerations: 3-4 key factors
+
+Return the result using the create_challenge_full function.`;
+}
+
+/* ── Repair simulation lab data ── */
+
+function repairSimulationLab(labData: any): any {
+  if (!labData?.parameters) return labData;
+  const params = labData.parameters;
+
+  // Ensure exactly 3 parameters
+  while (params.length < 3) {
+    params.push({ name: `Factor ${params.length + 1}`, icon: "📊", unit: "%", min: 0, max: 100, default: 50 });
+  }
+  if (params.length > 3) labData.parameters = params.slice(0, 3);
+
+  // Ensure thresholds
+  if (!labData.thresholds || !Array.isArray(labData.thresholds) || labData.thresholds.length === 0) {
+    labData.thresholds = [
+      { label: "Critical", min_percent: 0, message: "Parameters are at critical levels. Major issues ahead." },
+      { label: "Moderate", min_percent: 40, message: "Some stability, but improvements needed." },
+      { label: "Optimal", min_percent: 75, message: "Strong performance across all parameters." },
+    ];
+  }
+
+  // Repair decisions
+  if (labData.decisions) {
+    for (const decision of labData.decisions) {
+      if (!decision.choices) decision.choices = [];
+      for (const choice of decision.choices) {
+        if (!choice.set_state) choice.set_state = {};
+        for (const p of labData.parameters) {
+          if (typeof choice.set_state[p.name] !== "number") {
+            choice.set_state[p.name] = p.default ?? 50;
+          }
+          choice.set_state[p.name] = Math.max(0, Math.min(100, choice.set_state[p.name]));
+        }
+      }
+    }
+  }
+
+  return labData;
+}
+
+/* ── Main handler ── */
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -13,7 +177,6 @@ serve(async (req) => {
     const body = await req.json();
     const { topic, skill, difficulty, challenge_type, extra_prompt } = body;
 
-    // Support legacy single-field "prompt"
     const mainTopic = topic || body.prompt;
     if (!mainTopic || typeof mainTopic !== "string" || mainTopic.trim().length < 3) {
       return new Response(JSON.stringify({ error: "Please provide a topic (at least 3 characters)." }), {
@@ -55,7 +218,11 @@ serve(async (req) => {
 
     const userPrompt = `Create an interactive learning challenge about: ${mainTopic.trim()}
 Difficulty: ${diff}
-Challenge type preference: ${cType}${skillText}${extraText}`;
+Challenge type: ${cType}${skillText}${extraText}
+
+IMPORTANT: Generate a COMPLETE, PLAYABLE interactive lab with all required fields.`;
+
+    const systemPrompt = buildSystemPrompt(cType, labTypes);
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -66,63 +233,7 @@ Challenge type preference: ${cType}${skillText}${extraText}`;
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          {
-            role: "system",
-            content: `You are an interactive learning challenge generator. Given a topic, create an engaging challenge with full structured content AND an interactive lab experience.
-
-You MUST generate ALL of these fields:
-- title: Challenge title (max 80 chars)
-- description: Short summary (max 300 chars)  
-- objective: What the learner should practice (1-2 sentences)
-- instructions: Step-by-step instructions for the challenge
-- problem: The actual challenge problem statement (detailed)
-- hints: Array of exactly 2 hint strings
-- solution: The expected answer or solution
-- solution_explanation: Detailed explanation of why this is the solution
-- difficulty: "easy", "medium", or "hard"
-- challenge_type: The type of challenge
-- lab_type: Choose from ${labTypes.join(", ")}
-- lab_data: Structured lab data matching the lab_type schema
-
-Guidelines for lab type selection:
-- "simulation": For causal/systemic topics. Uses 3 parameters (0-100), thresholds, and decision scenarios with set_state.
-- "classification": For analytical/sorting topics. Uses items, categories, and correct_mapping.
-- "ethical_dilemma": For moral/ethical topics. Uses dimensions and decisions with tradeoff impacts.
-- "policy_optimization": For strategy/constraint topics. Uses parameters, constraints, targets, and max_moves.
-- "decision_lab": For complex reasoning topics. Uses scenario, constraints, decision_prompt, and considerations.
-
-CRITICAL RULES FOR LAB DATA:
-
-For "simulation" type:
-- Exactly 3 parameters with name, icon (emoji), unit, min (0), max (100), default (40-60)
-- Exactly 3 thresholds with label, min_percent, message
-- 2-4 decisions, each with a question, emoji, and 2-3 choices
-- EVERY choice MUST have set_state with ALL 3 parameter names as keys and values 0-100
-
-For "classification" type:
-- 5-8 items with name, description
-- 2-4 categories with name, description
-- correct_mapping object mapping item names to category names
-
-For "ethical_dilemma" type:
-- 3-4 dimensions with name, icon (emoji), description, initial_value (40-60)
-- 2-4 decisions with scenario, emoji, and 2-3 options
-- Each option has label, description, and impacts (dimension name → number change)
-
-For "policy_optimization" type:
-- 3-4 parameters with name, icon (emoji), unit, min (0), max (100), default, step (5-10)
-- 2-4 constraints with description
-- 2-3 targets with name, operator (">=", "<="), value, unit
-- max_moves: 3-5
-
-For "decision_lab" type:
-- scenario: detailed scenario text
-- 3-4 constraints (strings)
-- decision_prompt: what the user must decide
-- considerations: 3-4 key factors
-
-Return the result using the create_challenge_full function.`,
-          },
+          { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
         tools: [
@@ -189,9 +300,11 @@ Return the result using the create_challenge_full function.`,
       throw new Error("AI returned incomplete challenge data");
     }
 
-    // Defaults
+    // ── Apply defaults ──
     if (!labTypes.includes(challengeData.lab_type)) challengeData.lab_type = "simulation";
-    if (!challengeData.hints || !Array.isArray(challengeData.hints)) challengeData.hints = ["Think about the key concepts.", "Consider the tradeoffs."];
+    if (!challengeData.hints || !Array.isArray(challengeData.hints)) {
+      challengeData.hints = ["Think about the key concepts.", "Consider the tradeoffs."];
+    }
     if (!challengeData.objective) challengeData.objective = challengeData.description || "";
     if (!challengeData.instructions) challengeData.instructions = "Complete the interactive lab below.";
     if (!challengeData.problem) challengeData.problem = challengeData.description || "";
@@ -200,26 +313,59 @@ Return the result using the create_challenge_full function.`,
     challengeData.difficulty = challengeData.difficulty || diff;
     challengeData.challenge_type = challengeData.challenge_type || cType;
 
-    // Repair simulation lab data
-    if (challengeData.lab_type === "simulation" && challengeData.lab_data?.parameters) {
-      const params = challengeData.lab_data.parameters;
-      if (challengeData.lab_data.decisions) {
-        for (const decision of challengeData.lab_data.decisions) {
-          if (decision.choices) {
-            for (const choice of decision.choices) {
-              if (!choice.set_state) choice.set_state = {};
-              for (const p of params) {
-                if (typeof choice.set_state[p.name] !== "number") {
-                  choice.set_state[p.name] = p.default ?? 50;
-                }
-              }
-            }
-          }
-        }
+    // ── Repair lab data by type ──
+    if (challengeData.lab_type === "simulation") {
+      challengeData.lab_data = repairSimulationLab(challengeData.lab_data);
+    }
+
+    if (challengeData.lab_type === "classification" && challengeData.lab_data) {
+      if (!challengeData.lab_data.items || challengeData.lab_data.items.length === 0) {
+        challengeData.lab_data.items = [
+          { name: "Item 1", description: "First concept" },
+          { name: "Item 2", description: "Second concept" },
+          { name: "Item 3", description: "Third concept" },
+          { name: "Item 4", description: "Fourth concept" },
+          { name: "Item 5", description: "Fifth concept" },
+        ];
+      }
+      if (!challengeData.lab_data.categories || challengeData.lab_data.categories.length === 0) {
+        challengeData.lab_data.categories = [
+          { name: "Category A", description: "First group" },
+          { name: "Category B", description: "Second group" },
+        ];
+      }
+      if (!challengeData.lab_data.correct_mapping) {
+        challengeData.lab_data.correct_mapping = {};
+        const cats = challengeData.lab_data.categories;
+        challengeData.lab_data.items.forEach((item: any, i: number) => {
+          challengeData.lab_data.correct_mapping[item.name] = cats[i % cats.length].name;
+        });
       }
     }
 
-    // Return the full challenge data for client-side editing (don't save yet)
+    if (challengeData.lab_type === "ethical_dilemma" && challengeData.lab_data) {
+      if (!challengeData.lab_data.dimensions || challengeData.lab_data.dimensions.length === 0) {
+        challengeData.lab_data.dimensions = [
+          { name: "Ethics", icon: "⚖️", description: "Ethical standing", initial_value: 50 },
+          { name: "Profit", icon: "💰", description: "Financial outcome", initial_value: 50 },
+          { name: "Public Trust", icon: "🤝", description: "Public perception", initial_value: 50 },
+        ];
+      }
+    }
+
+    if (challengeData.lab_type === "policy_optimization" && challengeData.lab_data) {
+      if (!challengeData.lab_data.parameters || challengeData.lab_data.parameters.length === 0) {
+        challengeData.lab_data.parameters = [
+          { name: "Budget", icon: "💰", unit: "%", min: 0, max: 100, default: 50, step: 5 },
+          { name: "Efficiency", icon: "⚡", unit: "%", min: 0, max: 100, default: 50, step: 5 },
+          { name: "Satisfaction", icon: "😊", unit: "%", min: 0, max: 100, default: 50, step: 5 },
+        ];
+      }
+      if (!challengeData.lab_data.max_moves) challengeData.lab_data.max_moves = 4;
+    }
+
+    console.log("Generated challenge:", challengeData.lab_type, "with", Object.keys(challengeData.lab_data).length, "lab fields");
+
     return new Response(JSON.stringify({ challenge_data: challengeData }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
