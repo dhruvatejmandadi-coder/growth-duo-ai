@@ -662,8 +662,9 @@ Choose lab_type based on the topic's cognitive nature:
 - "classification" → for analytical/sorting topics (categorization, identification, prioritization)
 - "policy_optimization" → for strategic/constraint topics (reaching targets within limits)
 - "ethical_dilemma" → for ethical/moral topics (tradeoff decisions with no perfect answer)
+- "decision_lab" → for strategic reasoning, business, negotiation, product design, engineering decisions — ANY topic requiring free-text strategic thinking with AI critique
 
-Mix lab types across modules. Do NOT use the same lab_type for every module.
+PREFER decision_lab for at least 1-2 modules per course. Mix lab types across modules. Do NOT use the same lab_type for every module.
 
 === SIMULATION LAB (lab_type: "simulation") ===
 lab_data format:
@@ -742,8 +743,32 @@ lab_data format:
 }
 RULES: 3-4 dimensions, 3-4 dilemmas. Every choice MUST improve at least one dimension AND harm at least one other. Use "impacts" (deltas, -50 to +50), NOT "set_state". Student is scored on BALANCE across dimensions.
 
+=== DECISION LAB (lab_type: "decision_lab") ===
+lab_data format:
+{
+  "scenario": "Detailed real-world scenario (3-5 sentences). Must be specific, concrete, and domain-relevant.",
+  "constraints": ["Constraint 1", "Constraint 2", "Constraint 3"],
+  "decision_prompt": "What is your strategic approach to [specific challenge]?",
+  "twist": "A new constraint that fundamentally breaks or challenges the student's initial strategy (2-3 sentences).",
+  "reflection_question": "Looking back at your decisions, what would you change and why?",
+  "difficulty_tier": 2,
+  "variables": {
+    "budget": {"label": "Budget", "value": "$100K"},
+    "timeline": {"label": "Timeline", "value": "6 months"},
+    "team_size": {"label": "Team", "value": "5 people"}
+  }
+}
+RULES:
+- Scenario must be specific and grounded (not abstract)
+- 2-3 hard constraints that force tradeoffs
+- Twist must genuinely challenge the initial strategy (not just add difficulty)
+- difficulty_tier: 1 (basic clarity), 2 (constrained), 3 (strategic tradeoffs)
+- variables: randomizable parameters that make each run feel different
+- Students write free-text responses; AI provides critique
+- This lab type is PREFERRED for business, strategy, engineering, negotiation, product design topics
+
 ${filePath ? "IMPORTANT: The user has uploaded SOURCE MATERIAL. You MUST base the course content directly on the material provided. Extract key concepts, facts, and structure from the source material. Do NOT generate generic content — every lesson, lab scenario, and quiz question should reference or build upon the uploaded material." : ""}
-Generate 4-6 modules with a good mix of lab types.`,
+Generate 4-6 modules with a good mix of lab types. Include at least 1-2 decision_lab modules.`,
           },
           { role: "user", content: userContent },
         ],
