@@ -440,6 +440,11 @@ function repairModules(parsed: any) {
           if (!dim.description) dim.description = "";
         }
       }
+    } else if (mod.lab_type === "decision_lab") {
+      if (!isValidDecisionLab(ld)) {
+        console.warn(`[RepairModules] decision_lab fallback generated for: "${title}"`);
+        mod.lab_data = generateDecisionLabFallback(title);
+      }
     }
 
     // --- FINAL GUARD ---
@@ -447,7 +452,8 @@ function repairModules(parsed: any) {
       (mod.lab_type === "simulation" && isValidSimulation(mod.lab_data)) ||
       (mod.lab_type === "classification" && isValidClassification(mod.lab_data)) ||
       (mod.lab_type === "policy_optimization" && isValidPolicyOptimization(mod.lab_data)) ||
-      (mod.lab_type === "ethical_dilemma" && isValidEthicalDilemma(mod.lab_data));
+      (mod.lab_type === "ethical_dilemma" && isValidEthicalDilemma(mod.lab_data)) ||
+      (mod.lab_type === "decision_lab" && isValidDecisionLab(mod.lab_data));
 
     if (!finalValid) {
       console.error(`[RepairModules] FINAL GUARD - Forced simulation for: "${title}"`);
