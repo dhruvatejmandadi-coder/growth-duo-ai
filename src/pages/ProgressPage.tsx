@@ -154,7 +154,6 @@ export default function ProgressPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
-    </DashboardLayout>
+    </div>
   );
 }

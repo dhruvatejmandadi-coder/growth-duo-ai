@@ -309,6 +309,6 @@ export default function Courses() {
       </div>
 
       <GeneratingSignUpPrompt open={showSignUpPrompt} onOpenChange={handleSignUpPromptClose} topic={topic} />
-    </DashboardLayout>
+    </>
   );
 }

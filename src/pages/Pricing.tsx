@@ -231,6 +231,6 @@ export default function Pricing() {
           </>
         )}
       </div>
-    </DashboardLayout>
+    </div>
   );
 }

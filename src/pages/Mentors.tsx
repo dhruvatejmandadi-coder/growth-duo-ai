@@ -212,6 +212,6 @@ export default function Mentors() {
           </Button>
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }
