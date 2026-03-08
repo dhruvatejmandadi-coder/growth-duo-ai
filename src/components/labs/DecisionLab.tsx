@@ -116,6 +116,22 @@ export default function DecisionLab({ data, onComplete, isCompleted }: { data: D
   const tierLabel = data.difficulty_tier === 3 ? "Strategic Tradeoffs" : data.difficulty_tier === 2 ? "Constrained" : "Core Clarity";
   const tierColor = data.difficulty_tier === 3 ? "text-red-400" : data.difficulty_tier === 2 ? "text-yellow-400" : "text-green-400";
 
+  // Show completed state when revisiting
+  if (isCompleted && phase === "scenario") {
+    return (
+      <Card className="border-green-500/20 bg-green-500/[0.04]">
+        <CardContent className="p-6 text-center space-y-3">
+          <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto" />
+          <h3 className="font-bold text-lg">Decision Lab Complete</h3>
+          <p className="text-sm text-muted-foreground">You've already completed this decision lab.</p>
+          <Button variant="outline" onClick={() => setPhase("scenario")}>
+            <RotateCcw className="w-4 h-4 mr-1" /> Try Again
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Header */}
