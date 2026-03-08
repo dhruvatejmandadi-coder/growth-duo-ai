@@ -123,18 +123,18 @@ export default function Challenges() {
           )}
         </TabsContent>
 
-        <TabsContent value="community" className="mt-6">
-          {filterBySearch(communityChallenges).length === 0 ? (
+        <TabsContent value="active" className="mt-6">
+          {filterBySearch(activeChallenges).length === 0 ? (
             <Card className="border-dashed border-border/50">
               <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                <Trophy className="w-10 h-10 text-muted-foreground/30 mb-4" />
-                <h3 className="font-semibold text-sm mb-1">No community challenges</h3>
-                <p className="text-muted-foreground text-[13px]">Check back soon!</p>
+                <Play className="w-10 h-10 text-muted-foreground/30 mb-4" />
+                <h3 className="font-semibold text-sm mb-1">No active challenges</h3>
+                <p className="text-muted-foreground text-[13px]">Join a challenge to see it here!</p>
               </CardContent>
             </Card>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filterBySearch(communityChallenges).map((challenge) => (
+              {filterBySearch(activeChallenges).map((challenge) => (
                 <ChallengeCard key={challenge.id} challenge={challenge} />
               ))}
             </div>
