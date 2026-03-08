@@ -39,7 +39,7 @@ type ClassificationData = {
   items: Item[];
 };
 
-export default function ClassificationLab({ data }: { data: ClassificationData }) {
+export default function ClassificationLab({ data, onComplete }: { data: ClassificationData; onComplete?: () => void }) {
   // Normalize field names from AI output to component format
   const items: Item[] = (data?.items ?? []).map((raw: RawItem) => ({
     name: raw.name || raw.content || "Unknown item",

@@ -27,7 +27,7 @@ type EthicalData = {
   decisions: Decision[];
 };
 
-export default function EthicalDilemmaLab({ data }: { data: EthicalData }) {
+export default function EthicalDilemmaLab({ data, onComplete }: { data: EthicalData; onComplete?: () => void }) {
   const dimensions = data.dimensions ?? [];
   const decisions = data.decisions ?? [];
 

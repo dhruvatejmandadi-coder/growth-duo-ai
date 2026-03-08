@@ -50,7 +50,7 @@ function checkConstraint(c: Constraint, value: number): boolean {
   }
 }
 
-export default function PolicyOptimizationLab({ data }: { data: PolicyData }) {
+export default function PolicyOptimizationLab({ data, onComplete }: { data: PolicyData; onComplete?: () => void }) {
   const parameters = data.parameters ?? [];
   const constraints = data.constraints ?? [];
   const decisions = data.decisions ?? [];
