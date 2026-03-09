@@ -323,41 +323,82 @@ function pickMathVisualType(title: string, moduleIndex: number): MathVisualType 
 
 function generateMathLabFallback(title: string, visualType: MathVisualType) {
   const t = title || "Math Topic";
+  const tLower = t.toLowerCase();
+
+  // Derive topic-aware defaults instead of always using quadratics
+  const isTrig = /trig|sin|cos|tan|angle|radian|unit circle/i.test(t);
+  const isCalc = /deriv|tangent|limit|integral|rate of change|slope/i.test(t);
+  const isGeom = /triangle|circle|area|perim|angle|polygon|congruent|similar/i.test(t);
+  const isStats = /stat|mean|median|data|probability|distribution|regression/i.test(t);
+  const isLinear = /linear|slope|intercept|line/i.test(t) && !isCalc;
 
   const shared = {
     title: t,
     objective: `Practice ${t} through an interactive ${visualType.replace("_", " ")} lab.`,
     concept_overview: `This lab helps you apply ${t} using visual reasoning and structured problem solving.`,
-    scenario: `You are applying ${t} to solve a practical classroom challenge with clear numeric constraints.`,
+    scenario: `You are applying ${tLower} to solve a practical real-world problem.`,
     instructions: "Complete each task in order, show your reasoning, and verify your final answer.",
     tasks: [
-      { id: 1, description: `Identify what the problem is asking in this ${t} scenario.`, type: "explanation", correct_answer: "" },
-      { id: 2, description: "Compute the required value step by step.", type: "input", correct_answer: "" },
-      { id: 3, description: "Explain why your method is valid.", type: "explanation", correct_answer: "" },
+      { id: 1, description: `Identify the key information and formulas needed for this ${tLower} problem.`, type: "explanation", correct_answer: "" },
+      { id: 2, description: `Compute the required value using ${tLower} methods.`, type: "input", correct_answer: "" },
+      { id: 3, description: "Explain why your method is valid and check your answer.", type: "explanation", correct_answer: "" },
     ],
-    hints: ["Identify known values first.", "Keep units and signs consistent.", "Check your answer against the visual."],
-    solution: "Use the concept overview and visual to compute and verify the final value.",
-    solution_explanation: `Break ${t} into smaller steps, compute carefully, then validate the result with the provided visual representation.`,
+    hints: [
+      `Review the key formulas for ${tLower}.`,
+      "Keep units and signs consistent.",
+      "Check your answer against the visual representation.",
+    ],
+    solution: `Apply the standard ${tLower} method step by step to find the answer.`,
+    solution_explanation: `Break the ${tLower} problem into smaller steps, compute carefully, then validate.`,
   };
 
   if (visualType === "graph") {
+    // Topic-aware equation defaults
+    let equation = "x^2 - 4*x + 3";
+    let keyPoints = [{ x: 2, y: -1, label: "Vertex" }];
+    let xRange: [number, number] = [-5, 10];
+    let yRange: [number, number] = [-5, 15];
+    let xLabel = "x", yLabel = "y";
+    let params = [
+      { name: "a", label: "Coefficient a", min: -5, max: 5, step: 1, default: 1 },
+      { name: "b", label: "Coefficient b", min: -10, max: 10, step: 1, default: -4 },
+      { name: "c", label: "Constant c", min: -10, max: 10, step: 1, default: 3 },
+    ];
+
+    if (isTrig) {
+      equation = "Math.sin(x)";
+      keyPoints = [{ x: 0, y: 0, label: "Origin" }, { x: Math.PI / 2, y: 1, label: "Peak" }];
+      xRange = [-2 * Math.PI, 2 * Math.PI]; yRange = [-2, 2];
+      params = [
+        { name: "a", label: "Amplitude", min: 1, max: 5, step: 1, default: 1 },
+        { name: "b", label: "Frequency", min: 1, max: 4, step: 1, default: 1 },
+        { name: "c", label: "Vertical shift", min: -3, max: 3, step: 1, default: 0 },
+      ];
+    } else if (isCalc) {
+      equation = "x^3 - 3*x";
+      keyPoints = [{ x: 1, y: -2, label: "Point of tangency" }];
+      xRange = [-4, 4]; yRange = [-10, 10];
+      params = [
+        { name: "a", label: "Point x-value", min: -3, max: 3, step: 0.5, default: 1 },
+        { name: "b", label: "Coefficient", min: 1, max: 5, step: 1, default: 1 },
+        { name: "c", label: "Constant", min: -5, max: 5, step: 1, default: 0 },
+      ];
+    } else if (isLinear) {
+      equation = "2*x + 1";
+      keyPoints = [{ x: 0, y: 1, label: "y-intercept" }];
+      xRange = [-5, 5]; yRange = [-5, 15];
+      params = [
+        { name: "a", label: "Slope (m)", min: -5, max: 5, step: 1, default: 2 },
+        { name: "b", label: "y-intercept (b)", min: -10, max: 10, step: 1, default: 1 },
+        { name: "c", label: "Unused", min: 0, max: 0, step: 1, default: 0 },
+      ];
+    }
+
     return {
       ...shared,
       visual_type: "graph",
-      graph_data: {
-        type: "function",
-        equation: "a*x^2 + b*x + c",
-        x_label: "x",
-        y_label: "y",
-        x_range: [-10, 10],
-        y_range: [-20, 20],
-        key_points: [{ x: 0, y: 0, label: "Origin" }],
-      },
-      interactive_params: [
-        { name: "a", label: "Quadratic coefficient", min: -5, max: 5, step: 1, default: 1 },
-        { name: "b", label: "Linear coefficient", min: -10, max: 10, step: 1, default: 0 },
-        { name: "c", label: "Constant", min: -10, max: 10, step: 1, default: 0 },
-      ],
+      graph_data: { type: "function", equation, x_label: xLabel, y_label: yLabel, x_range: xRange, y_range: yRange, key_points: keyPoints },
+      interactive_params: params,
     };
   }
 
@@ -367,13 +408,13 @@ function generateMathLabFallback(title: string, visualType: MathVisualType) {
       visual_type: "geometry",
       geometry: [
         {
-          type: "triangle",
+          type: isGeom && /circle/i.test(t) ? "circle" : "triangle",
           points: [
             { x: 2, y: 2, label: "A" },
             { x: 8, y: 2, label: "B" },
             { x: 5, y: 7, label: "C" },
           ],
-          measurements: { AB: "6", BC: "5", AC: "5" },
+          measurements: { AB: "6", BC: "5.83", AC: "5.83" },
         },
       ],
     };
@@ -384,11 +425,11 @@ function generateMathLabFallback(title: string, visualType: MathVisualType) {
       ...shared,
       visual_type: "chart",
       graph_data: {
-        type: "bar",
-        data_labels: ["Set A", "Set B", "Set C", "Set D"],
-        data_values: [12, 18, 9, 15],
-        x_label: "Set",
-        y_label: "Value",
+        type: isStats ? "bar" : "bar",
+        data_labels: isStats ? ["Q1", "Q2", "Q3", "Q4"] : ["Set A", "Set B", "Set C", "Set D"],
+        data_values: isStats ? [78, 85, 72, 91] : [12, 18, 9, 15],
+        x_label: isStats ? "Quarter" : "Set",
+        y_label: isStats ? "Score" : "Value",
       },
     };
   }
@@ -397,8 +438,8 @@ function generateMathLabFallback(title: string, visualType: MathVisualType) {
     ...shared,
     visual_type: "solution_steps",
     solution_steps: [
-      { step: 1, expression: "Identify knowns and unknowns", explanation: "List all given values and define the target variable." },
-      { step: 2, expression: "Choose and apply formula", explanation: "Substitute values carefully and simplify." },
+      { step: 1, expression: `Identify knowns for ${tLower}`, explanation: "List all given values and define the target variable." },
+      { step: 2, expression: `Apply ${tLower} formula`, explanation: "Substitute values carefully and simplify." },
       { step: 3, expression: "Verify and interpret", explanation: "Check arithmetic and explain what the result means." },
     ],
   };
@@ -858,33 +899,43 @@ Choose lab_type based on the topic's cognitive nature:
 MATH LAB RULE: If the course topic is math-related, use "math_lab" for ALL modules. Math topics include algebra, geometry, calculus, statistics, trigonometry, equations, graphing, number theory, etc.
 MATH LAB DIVERSITY RULE: Across math modules, rotate visual_type intentionally. Use at least 3 different visual types when possible (graph, geometry, solution_steps, chart), and never make every module use the same visual_type.
 
+=== MATH LAB TOPIC RELEVANCY — CRITICAL ===
+Every math lab MUST be directly about the SPECIFIC math concept in that module's title.
+- If the module is about "Tangent Lines", the lab MUST involve tangent line equations, slopes at a point, secant-to-tangent limits — NOT quadratics or unrelated algebra.
+- If the module is about "Trigonometric Functions", use sin/cos/tan equations, unit circle values, trig identities — NOT polynomial graphs.
+- If the module is about "Limits", use limit computations, epsilon-delta, continuity — NOT generic equations.
+- The equation, graph_data, geometry, solution_steps, tasks, scenario, and hints MUST all reference the EXACT concept from the module title.
+- NEVER default to quadratic equations (ax²+bx+c) unless the module is specifically about quadratics or parabolas.
+- The scenario MUST use a real-world application of THAT SPECIFIC math concept (e.g., tangent lines → rate of change of a rocket's altitude; trig → calculating roof angles).
+- Tasks must require the student to USE that concept's formulas and methods, not generic "solve this equation."
+
 For math_lab, lab_data format:
 {
-  "title": "Lab title",
-  "objective": "What math skill the student will practice",
-  "concept_overview": "2-4 sentence explanation of the concept",
+  "title": "Lab title — must reference the specific math concept",
+  "objective": "What SPECIFIC math skill the student will practice (e.g., 'Find the equation of a tangent line at a given point')",
+  "concept_overview": "2-4 sentence explanation of THIS SPECIFIC concept with its key formulas",
   "visual_type": "graph" | "geometry" | "solution_steps" | "chart",
   "graph_data": { (for graph/chart types)
     "type": "function" | "scatter" | "bar",
-    "equation": "x^2 - 4*x + 3", (JS math expression)
+    "equation": "Math.sin(x)", (JS math expression — MUST match the module's concept, e.g. tangent line: "x^2" with tangent overlay, trig: "Math.sin(x)")
     "x_label": "x", "y_label": "y",
     "x_range": [-5, 10], "y_range": [-5, 15],
-    "key_points": [{"x": 2, "y": -1, "label": "Vertex"}]
+    "key_points": [{"x": 2, "y": 4, "label": "Point of tangency"}]
   },
   "geometry": [{ (for geometry type)
-    "type": "triangle",
+    "type": "triangle" | "circle" | "line",
     "points": [{"x": 1, "y": 1, "label": "A"}],
     "measurements": {"AB": "4 units"}
   }],
   "solution_steps": [{ (for solution_steps type)
-    "step": 1, "expression": "2x + 5 = 15", "explanation": "Original equation"
+    "step": 1, "expression": "f'(x) = 2x", "explanation": "Take the derivative to find slope of tangent"
   }],
-  "scenario": "Real-world application scenario",
-  "instructions": "Step-by-step lab instructions",
-  "tasks": [{"id": 1, "description": "task text", "type": "input"|"choice"|"explanation", "correct_answer": "answer"}],
-  "hints": ["hint 1", "hint 2"],
-  "solution": "correct answer",
-  "solution_explanation": "step-by-step explanation"
+  "scenario": "Real-world application of THIS SPECIFIC concept (not generic math)",
+  "instructions": "Step-by-step lab instructions referencing the specific formulas/methods for this concept",
+  "tasks": [{"id": 1, "description": "task requiring THIS concept's methods", "type": "input"|"choice"|"explanation", "correct_answer": "answer"}],
+  "hints": ["hint referencing this concept's formulas", "hint 2"],
+  "solution": "correct answer using this concept",
+  "solution_explanation": "step-by-step explanation using this concept's methods"
 }
 
 PREFER decision_lab for at least 1-2 modules per course (unless it's a math course). Mix lab types across modules. Do NOT use the same lab_type for every module (except math courses which should always use math_lab).
