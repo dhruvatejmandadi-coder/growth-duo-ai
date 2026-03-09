@@ -137,11 +137,11 @@ export default function Profile() {
 
     localStorage.setItem(PROFILE_KEY, JSON.stringify({ fullName, bio }));
 
-    // Also save name to profiles table so it appears in Community & Challenges
+    // Save name and bio to profiles table
     if (user) {
       await supabase
         .from("profiles")
-        .update({ full_name: fullName })
+        .update({ full_name: fullName, bio })
         .eq("user_id", user.id);
     }
 
