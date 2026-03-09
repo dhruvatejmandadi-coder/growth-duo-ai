@@ -1036,26 +1036,36 @@ RULES: 3-4 dimensions, 3-4 dilemmas. Every choice MUST improve at least one dime
 === DECISION LAB (lab_type: "decision_lab") ===
 lab_data format:
 {
-  "scenario": "Detailed real-world scenario (3-5 sentences). Must be specific, concrete, and domain-relevant.",
-  "constraints": ["Constraint 1", "Constraint 2", "Constraint 3"],
-  "decision_prompt": "What is your strategic approach to [specific challenge]?",
-  "twist": "A new constraint that fundamentally breaks or challenges the student's initial strategy (2-3 sentences).",
-  "reflection_question": "Looking back at your decisions, what would you change and why?",
-  "difficulty_tier": 2,
-  "variables": {
-    "budget": {"label": "Budget", "value": "$100K"},
-    "timeline": {"label": "Timeline", "value": "6 months"},
-    "team_size": {"label": "Team", "value": "5 people"}
-  }
+  "concept_knowledge": {
+    "definition": "Clear explanation of the concept (1-2 sentences)",
+    "key_ideas": ["Key idea 1", "Key idea 2", "Key idea 3"],
+    "examples": ["Real example 1", "Real example 2"]
+  },
+  "real_world_relevance": {
+    "explanation": "Why this concept matters in the real world (2-3 sentences)",
+    "domain": "e.g. Government Policy, Business Strategy, Urban Planning"
+  },
+  "scenario": "A realistic situation where someone must make a decision using this concept (3-5 sentences). MUST be unique per topic.",
+  "decision_challenge": {
+    "question": "What would you do in this situation?",
+    "options": [
+      {"id": "a", "text": "Option A description", "consequence": "What happens if you choose this (2-3 sentences)", "is_best": false},
+      {"id": "b", "text": "Option B description", "consequence": "What happens if you choose this (2-3 sentences)", "is_best": true},
+      {"id": "c", "text": "Option C description", "consequence": "What happens if you choose this (2-3 sentences)", "is_best": false}
+    ]
+  },
+  "best_decision_explanation": "Why the best option is correct, connecting back to the concept (2-3 sentences)"
 }
 RULES:
-- Scenario must be specific and grounded (not abstract)
-- 2-3 hard constraints that force tradeoffs
-- Twist must genuinely challenge the initial strategy (not just add difficulty)
-- difficulty_tier: 1 (basic clarity), 2 (constrained), 3 (strategic tradeoffs)
-- variables: randomizable parameters that make each run feel different
-- Students write free-text responses; AI provides critique
-- This lab type is PREFERRED for business, strategy, engineering, negotiation, product design topics
+- concept_knowledge must teach the concept BEFORE the student decides
+- Scenario must be UNIQUE for every topic — never reuse scenarios
+- 3-4 decision options, each representing a different strategy
+- No obviously wrong answers — all options should seem reasonable
+- Each option must have a detailed consequence explaining what would happen
+- Exactly ONE option should have is_best: true
+- best_decision_explanation must connect reasoning back to the concept
+- This lab type is PREFERRED for business, strategy, engineering, negotiation, social science topics
+- Decision options must be specific and realistic — avoid generic choices like "increase funding"
 
 ${filePath ? "IMPORTANT: The user has uploaded SOURCE MATERIAL. You MUST base the course content directly on the material provided. Extract key concepts, facts, and structure from the source material. Do NOT generate generic content — every lesson, lab scenario, and quiz question should reference or build upon the uploaded material." : ""}
 Generate 4-6 modules with a good mix of lab types. Include at least 1-2 decision_lab modules.`,
