@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,13 +6,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import {
   CheckCircle2, RotateCcw, Lightbulb, Eye, EyeOff,
-  Send, FlaskConical, ChevronRight, BarChart3, SlidersHorizontal
+  Send, FlaskConical, ChevronRight, BarChart3, SlidersHorizontal,
+  Loader2, Upload, FileText, X, AlertCircle
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ScatterChart, Scatter, BarChart, Bar,
   ReferenceDot, ReferenceLine
 } from "recharts";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 /* ═══════════════ TYPES ═══════════════ */
 
@@ -80,6 +83,14 @@ type MathLabData = {
   solution_explanation: string;
 };
 
+type TaskFeedback = {
+  score: number;
+  is_correct: boolean;
+  feedback: string;
+  correction: string;
+  tip: string;
+};
+
 type Props = {
   data: MathLabData;
   onComplete?: () => void;
@@ -91,9 +102,7 @@ type Props = {
 function evaluateEquation(equation: string, x: number, params: Record<string, number>): number | null {
   try {
     let expr = equation.replace(/\^/g, "**");
-    // Replace parameter variables with their values
     for (const [name, value] of Object.entries(params)) {
-      // Replace standalone param names (not inside function names)
       expr = expr.replace(new RegExp(`(?<![a-zA-Z.])${name}(?![a-zA-Z(])`, "g"), `(${value})`);
     }
     expr = expr.replace(/(?<![a-zA-Z.])x(?![a-zA-Z(])/g, `(${x})`);
@@ -103,6 +112,121 @@ function evaluateEquation(equation: string, x: number, params: Record<string, nu
   } catch {
     return null;
   }
+}
+
+/* ═══════════════ PDF UPLOAD COMPONENT ═══════════════ */
+
+function PdfUploadButton({ onExtracted, disabled }: { onExtracted: (text: string) => void; disabled?: boolean }) {
+  const [uploading, setUploading] = useState(false);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      return;
+    }
+
+    setUploading(true);
+    setFileName(file.name);
+
+    try {
+      // For text/md files, read directly
+      if (file.type === "text/plain" || file.name.endsWith(".md") || file.name.endsWith(".txt")) {
+        const text = await file.text();
+        onExtracted(text);
+        setUploading(false);
+        return;
+      }
+
+      // For PDFs, upload to storage then extract
+      const filePath = `math-lab-answers/${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("course-uploads")
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Download and extract text
+      const { data: downloaded, error: downloadError } = await supabase.storage
+        .from("course-uploads")
+        .download(filePath);
+
+      if (downloadError || !downloaded) throw downloadError;
+
+      const text = await downloaded.text();
+      const cleaned = text.replace(/[^\x20-\x7E\n\r\t]/g, " ").replace(/\s{3,}/g, " ").trim();
+      onExtracted(cleaned.length > 50 ? cleaned : `[PDF uploaded: ${file.name}] — Content could not be fully extracted. Please also type a brief summary of your answer.`);
+
+      // Cleanup uploaded file
+      await supabase.storage.from("course-uploads").remove([filePath]);
+    } catch {
+      onExtracted(`[File uploaded: ${file.name}] — Unable to extract text. Please type your answer below.`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".pdf,.txt,.md"
+        onChange={handleFile}
+        className="hidden"
+      />
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => fileRef.current?.click()}
+        disabled={disabled || uploading}
+        className="text-xs"
+      >
+        {uploading ? (
+          <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Processing...</>
+        ) : (
+          <><Upload className="w-3 h-3 mr-1" /> Upload PDF/TXT</>
+        )}
+      </Button>
+      {fileName && !uploading && (
+        <span className="text-xs text-muted-foreground flex items-center gap-1">
+          <FileText className="w-3 h-3" /> {fileName}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════ AI FEEDBACK COMPONENT ═══════════════ */
+
+function TaskFeedbackCard({ feedback }: { feedback: TaskFeedback }) {
+  return (
+    <div className={`rounded-lg p-4 text-sm space-y-2 ${
+      feedback.is_correct
+        ? "bg-green-500/10 border border-green-500/20"
+        : "bg-amber-500/10 border border-amber-500/20"
+    }`}>
+      <div className="flex items-center justify-between">
+        <span className={`font-semibold ${feedback.is_correct ? "text-green-400" : "text-amber-400"}`}>
+          {feedback.is_correct ? "✅ Correct!" : "⚠️ Needs work"}
+        </span>
+        <Badge variant="outline" className="text-xs font-mono">
+          {feedback.score}/100
+        </Badge>
+      </div>
+      <p className="text-foreground/90">{feedback.feedback}</p>
+      {feedback.correction && (
+        <div className="bg-background/50 rounded p-2 text-xs">
+          <p className="font-semibold text-muted-foreground mb-1">Correct approach:</p>
+          <p className="font-mono whitespace-pre-wrap">{feedback.correction}</p>
+        </div>
+      )}
+      <p className="text-xs text-muted-foreground italic">💡 {feedback.tip}</p>
+    </div>
+  );
 }
 
 /* ═══════════════ INTERACTIVE GRAPH ═══════════════ */
@@ -142,11 +266,9 @@ function MathGraph({ graphData, interactiveParams }: { graphData: GraphData; int
     return [];
   }, [graphData, paramValues, hasSliders]);
 
-  // Recalculate key points with current params
   const dynamicKeyPoints = useMemo(() => {
     if (!graphData.key_points || !graphData.equation) return graphData.key_points ?? [];
     if (!hasSliders) return graphData.key_points;
-    // Re-evaluate key point y values with current params
     return graphData.key_points.map(kp => {
       const y = evaluateEquation(graphData.equation!, kp.x, paramValues);
       return { ...kp, y: y ?? kp.y };
@@ -157,7 +279,6 @@ function MathGraph({ graphData, interactiveParams }: { graphData: GraphData; int
     setParamValues(prev => ({ ...prev, [name]: value }));
   }, []);
 
-  // Build current equation display
   const displayEquation = useMemo(() => {
     if (!graphData.equation) return null;
     let eq = graphData.equation;
@@ -211,7 +332,6 @@ function MathGraph({ graphData, interactiveParams }: { graphData: GraphData; int
     );
   }
 
-  // Default: Line chart (function graph) with optional sliders
   return (
     <div className="space-y-3">
       <div className="w-full h-72 bg-background rounded-lg border p-2">
@@ -262,14 +382,12 @@ function MathGraph({ graphData, interactiveParams }: { graphData: GraphData; int
         </ResponsiveContainer>
       </div>
 
-      {/* Equation display */}
       {displayEquation && (
         <p className="text-center text-sm font-mono text-accent">
           y = {displayEquation}
         </p>
       )}
 
-      {/* Interactive Parameter Sliders */}
       {hasSliders && (
         <Card className="border-accent/20 bg-accent/[0.03]">
           <CardContent className="p-4 space-y-4">
@@ -328,7 +446,6 @@ function GeometryDiagram({ shapes }: { shapes: GeometryShape[] }) {
     <div className="w-full flex justify-center">
       <div className="bg-background rounded-lg border p-4">
         <svg width={svgSize} height={svgSize} viewBox={`0 0 ${svgSize} ${svgSize}`}>
-          {/* Grid */}
           <defs>
             <pattern id="mathgrid" width="20" height="20" patternUnits="userSpaceOnUse">
               <path d="M 20 0 L 0 0 0 20" fill="none" stroke="hsl(var(--border))" strokeWidth="0.5" />
@@ -377,20 +494,12 @@ function GeometryDiagram({ shapes }: { shapes: GeometryShape[] }) {
                     <g key={pi}>
                       <circle cx={p.x} cy={p.y} r={3.5} fill="hsl(var(--primary))" />
                       {p.label && (
-                        <text
-                          x={p.x}
-                          y={p.y - 10}
-                          fontSize="12"
-                          fontWeight="600"
-                          fill="hsl(var(--foreground))"
-                          textAnchor="middle"
-                        >
+                        <text x={p.x} y={p.y - 10} fontSize="12" fontWeight="600" fill="hsl(var(--foreground))" textAnchor="middle">
                           {p.label}
                         </text>
                       )}
                     </g>
                   ))}
-                  {/* Side measurements */}
                   {shape.measurements && Object.entries(shape.measurements).map(([key, val], mi) => {
                     if (pts.length > mi + 1) {
                       const midX = (pts[mi].x + pts[(mi + 1) % pts.length].x) / 2;
@@ -465,10 +574,13 @@ function SolutionStepsVisual({ steps }: { steps: SolutionStep[] }) {
 /* ═══════════════ MAIN MATH LAB ═══════════════ */
 
 export default function MathLab({ data, onComplete, isCompleted }: Props) {
+  const { toast } = useToast();
   const [started, setStarted] = useState(false);
   const [currentTask, setCurrentTask] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState<Record<number, boolean>>({});
+  const [feedbacks, setFeedbacks] = useState<Record<number, TaskFeedback>>({});
+  const [submitting, setSubmitting] = useState<Record<number, boolean>>({});
   const [hintsRevealed, setHintsRevealed] = useState<number[]>([]);
   const [showSolution, setShowSolution] = useState(false);
   const [completionFired, setCompletionFired] = useState(false);
@@ -489,9 +601,66 @@ export default function MathLab({ data, onComplete, isCompleted }: Props) {
     setCurrentTask(0);
     setAnswers({});
     setSubmitted({});
+    setFeedbacks({});
+    setSubmitting({});
     setHintsRevealed([]);
     setShowSolution(false);
     setCompletionFired(false);
+  };
+
+  const handleSubmitTask = async (taskIndex: number) => {
+    const task = tasks[taskIndex];
+    const answer = answers[taskIndex]?.trim();
+    if (!answer) return;
+
+    setSubmitting(prev => ({ ...prev, [taskIndex]: true }));
+    setSubmitted(prev => ({ ...prev, [taskIndex]: true }));
+
+    try {
+      const { data: fnData, error } = await supabase.functions.invoke("math-lab-feedback", {
+        body: {
+          lab_title: data.title,
+          task_description: task.description,
+          task_type: task.type || "input",
+          correct_answer: task.correct_answer || "",
+          student_answer: answer,
+          concept_overview: data.concept_overview,
+          scenario: data.scenario || "",
+        },
+      });
+
+      if (error) throw error;
+
+      if (fnData?.feedback) {
+        setFeedbacks(prev => ({ ...prev, [taskIndex]: fnData.feedback }));
+      }
+    } catch (err) {
+      // Fallback to simple string matching if AI fails
+      const isCorrect = task.correct_answer
+        ? answer.toLowerCase() === task.correct_answer.trim().toLowerCase()
+        : true;
+
+      setFeedbacks(prev => ({
+        ...prev,
+        [taskIndex]: {
+          score: isCorrect ? 100 : 50,
+          is_correct: isCorrect,
+          feedback: isCorrect
+            ? "Your answer looks correct! Great work."
+            : `The expected answer was: ${task.correct_answer || "N/A"}. Review your approach.`,
+          correction: "",
+          tip: "Try reviewing the concept overview for more insight.",
+        },
+      }));
+
+      toast({
+        title: "AI feedback unavailable",
+        description: "Using basic grading instead. Your answer was still submitted.",
+        variant: "default",
+      });
+    } finally {
+      setSubmitting(prev => ({ ...prev, [taskIndex]: false }));
+    }
   };
 
   // Completed state
@@ -533,7 +702,6 @@ export default function MathLab({ data, onComplete, isCompleted }: Props) {
             </div>
           )}
 
-          {/* Visual preview */}
           {data.visual_type === "graph" && data.graph_data && (
             <MathGraph graphData={data.graph_data} interactiveParams={data.interactive_params} />
           )}
@@ -613,6 +781,9 @@ export default function MathLab({ data, onComplete, isCompleted }: Props) {
           <CardContent className="p-5 space-y-4">
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-xs">Task {currentTask + 1}/{tasks.length}</Badge>
+              {task.type && (
+                <Badge variant="secondary" className="text-xs capitalize">{task.type}</Badge>
+              )}
             </div>
             <p className="text-sm font-medium">{task.description}</p>
 
@@ -638,42 +809,58 @@ export default function MathLab({ data, onComplete, isCompleted }: Props) {
 
             {/* Text workspace */}
             {(task.type === "input" || task.type === "explanation" || !task.type) && (
-              <Textarea
-                placeholder={task.type === "explanation" ? "Explain your reasoning..." : "Type your answer..."}
-                value={answers[currentTask] ?? ""}
-                onChange={(e) => setAnswers({ ...answers, [currentTask]: e.target.value })}
-                disabled={!!submitted[currentTask]}
-                rows={3}
-                className="font-mono"
-              />
+              <div className="space-y-2">
+                <Textarea
+                  placeholder={task.type === "explanation" ? "Explain your reasoning..." : "Type your answer..."}
+                  value={answers[currentTask] ?? ""}
+                  onChange={(e) => setAnswers({ ...answers, [currentTask]: e.target.value })}
+                  disabled={!!submitted[currentTask]}
+                  rows={4}
+                  className="font-mono"
+                />
+                {!submitted[currentTask] && (
+                  <PdfUploadButton
+                    onExtracted={(text) => {
+                      setAnswers(prev => ({
+                        ...prev,
+                        [currentTask]: prev[currentTask]
+                          ? `${prev[currentTask]}\n\n--- Uploaded Content ---\n${text}`
+                          : text,
+                      }));
+                    }}
+                    disabled={!!submitted[currentTask]}
+                  />
+                )}
+              </div>
             )}
 
-            {/* Feedback after submit */}
-            {submitted[currentTask] && task.correct_answer && (
-              <div className={`rounded-lg p-3 text-sm ${
-                answers[currentTask]?.trim().toLowerCase() === task.correct_answer.trim().toLowerCase()
-                  ? "bg-green-500/10 border border-green-500/20 text-green-400"
-                  : "bg-yellow-500/10 border border-yellow-500/20 text-yellow-400"
-              }`}>
-                {answers[currentTask]?.trim().toLowerCase() === task.correct_answer.trim().toLowerCase()
-                  ? "✅ Correct!"
-                  : `💡 Expected: ${task.correct_answer}`}
+            {/* AI Feedback after submit */}
+            {submitted[currentTask] && submitting[currentTask] && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 rounded-lg bg-muted/30 border">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Analyzing your answer...
               </div>
+            )}
+
+            {submitted[currentTask] && feedbacks[currentTask] && (
+              <TaskFeedbackCard feedback={feedbacks[currentTask]} />
             )}
 
             <div className="flex gap-2">
               {!submitted[currentTask] && (
                 <Button
-                  onClick={() => {
-                    setSubmitted({ ...submitted, [currentTask]: true });
-                  }}
-                  disabled={!answers[currentTask]?.trim()}
+                  onClick={() => handleSubmitTask(currentTask)}
+                  disabled={!answers[currentTask]?.trim() || !!submitting[currentTask]}
                   size="sm"
                 >
-                  <Send className="w-3.5 h-3.5 mr-1" /> Submit
+                  {submitting[currentTask] ? (
+                    <><Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> Submitting...</>
+                  ) : (
+                    <><Send className="w-3.5 h-3.5 mr-1" /> Submit</>
+                  )}
                 </Button>
               )}
-              {submitted[currentTask] && currentTask < tasks.length - 1 && (
+              {submitted[currentTask] && !submitting[currentTask] && currentTask < tasks.length - 1 && (
                 <Button size="sm" variant="outline" onClick={() => setCurrentTask(currentTask + 1)}>
                   Next Task <ChevronRight className="w-3.5 h-3.5 ml-1" />
                 </Button>
@@ -686,13 +873,39 @@ export default function MathLab({ data, onComplete, isCompleted }: Props) {
       {/* All done */}
       {allTasksDone && (
         <Card className="border-green-500/20 bg-green-500/[0.04]">
-          <CardContent className="p-5 text-center space-y-3">
-            <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto" />
-            <h3 className="font-bold text-lg">Lab Complete!</h3>
-            <p className="text-sm text-muted-foreground">You completed all {tasks.length} tasks.</p>
-            <Button variant="outline" onClick={reset}>
-              <RotateCcw className="w-4 h-4 mr-1" /> Redo Lab
-            </Button>
+          <CardContent className="p-5 space-y-4">
+            <div className="text-center space-y-3">
+              <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto" />
+              <h3 className="font-bold text-lg">Lab Complete!</h3>
+              <p className="text-sm text-muted-foreground">You completed all {tasks.length} tasks.</p>
+            </div>
+
+            {/* Score summary */}
+            {Object.keys(feedbacks).length > 0 && (
+              <div className="bg-muted/30 rounded-lg p-4 space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground">📊 Performance Summary</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="text-center p-2 rounded bg-background border">
+                    <p className="text-2xl font-bold text-accent">
+                      {Math.round(Object.values(feedbacks).reduce((sum, f) => sum + f.score, 0) / Object.values(feedbacks).length)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Avg Score</p>
+                  </div>
+                  <div className="text-center p-2 rounded bg-background border">
+                    <p className="text-2xl font-bold text-green-500">
+                      {Object.values(feedbacks).filter(f => f.is_correct).length}/{Object.values(feedbacks).length}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Correct</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-center">
+              <Button variant="outline" onClick={reset}>
+                <RotateCcw className="w-4 h-4 mr-1" /> Redo Lab
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
