@@ -354,7 +354,7 @@ function generateMathLabFallback(title: string, visualType: MathVisualType) {
 
   if (visualType === "graph") {
     // Topic-aware equation defaults
-    let equation = "x^2 - 4*x + 3";
+    let equation = "a*x^2 + b*x + c";
     let keyPoints = [{ x: 2, y: -1, label: "Vertex" }];
     let xRange: [number, number] = [-5, 10];
     let yRange: [number, number] = [-5, 15];
@@ -366,27 +366,27 @@ function generateMathLabFallback(title: string, visualType: MathVisualType) {
     ];
 
     if (isTrig) {
-      equation = "Math.sin(x)";
-      keyPoints = [{ x: 0, y: 0, label: "Origin" }, { x: Math.PI / 2, y: 1, label: "Peak" }];
-      xRange = [-2 * Math.PI, 2 * Math.PI]; yRange = [-2, 2];
+      equation = "a*Math.sin(b*x)+c";
+      keyPoints = [{ x: 0, y: 0, label: "Origin" }, { x: 1.57, y: 1, label: "Peak" }];
+      xRange = [-7, 7]; yRange = [-6, 6];
       params = [
         { name: "a", label: "Amplitude", min: 1, max: 5, step: 1, default: 1 },
         { name: "b", label: "Frequency", min: 1, max: 4, step: 1, default: 1 },
         { name: "c", label: "Vertical shift", min: -3, max: 3, step: 1, default: 0 },
       ];
     } else if (isCalc) {
-      equation = "x^3 - 3*x";
+      equation = "b*x^3 - 3*b*x + c";
       keyPoints = [{ x: 1, y: -2, label: "Point of tangency" }];
       xRange = [-4, 4]; yRange = [-10, 10];
       params = [
-        { name: "a", label: "Point x-value", min: -3, max: 3, step: 0.5, default: 1 },
+        { name: "a", label: "Tangent point x", min: -3, max: 3, step: 0.5, default: 1 },
         { name: "b", label: "Coefficient", min: 1, max: 5, step: 1, default: 1 },
-        { name: "c", label: "Constant", min: -5, max: 5, step: 1, default: 0 },
+        { name: "c", label: "Vertical shift", min: -5, max: 5, step: 1, default: 0 },
       ];
     } else if (isLinear) {
-      equation = "2*x + 1";
+      equation = "a*x + b";
       keyPoints = [{ x: 0, y: 1, label: "y-intercept" }];
-      xRange = [-5, 5]; yRange = [-5, 15];
+      xRange = [-5, 5]; yRange = [-15, 15];
       params = [
         { name: "a", label: "Slope (m)", min: -5, max: 5, step: 1, default: 2 },
         { name: "b", label: "y-intercept (b)", min: -10, max: 10, step: 1, default: 1 },
