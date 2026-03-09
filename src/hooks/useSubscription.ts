@@ -38,6 +38,7 @@ interface SubscriptionState {
 
 export function useSubscription() {
   const { user } = useAuth();
+  const { isAdmin } = useAdmin();
   const [state, setState] = useState<SubscriptionState>({
     plan: "starter",
     subscribed: false,
