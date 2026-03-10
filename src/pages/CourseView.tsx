@@ -109,25 +109,18 @@ export default function CourseView() {
     completeSection(mod.id, "lab", modules.length);
   }, [mod, completeSection, modules.length]);
 
-  const handleQuizSubmit = async () => {
-    if (!mod) return;
-    setQuizSubmitted(true);
-
-    const quizQuestions = mod.quiz as any[];
-    const score = quizQuestions.filter((q: any, i: number) => quizAnswers[i] === q.correct).length;
-    const total = quizQuestions.length;
+  const handleQuizSubmit = async (answers: Record<number, number>, score: number, total: number) => {
+    if (!mod || !user) return;
     const pct = total > 0 ? score / total : 0;
     const passed = pct >= PASS_THRESHOLD;
 
-    if (user) {
-      await supabase.from("quiz_attempts").insert({
-        user_id: user.id,
-        module_id: mod.id,
-        answers: quizAnswers,
-        score,
-        total,
-      });
-    }
+    await supabase.from("quiz_attempts").insert({
+      user_id: user.id,
+      module_id: mod.id,
+      answers,
+      score,
+      total,
+    });
 
     if (passed) {
       completeSection(mod.id, "quiz", modules.length);
@@ -141,19 +134,9 @@ export default function CourseView() {
     }
   };
 
-  const resetQuiz = () => {
-    setQuizAnswers({});
-    setQuizSubmitted(false);
-    if (mod) uncompleteSection(mod.id, "quiz");
-  };
-
   const selectItem = (moduleIndex: number, content: ContentType) => {
     setActiveModule(moduleIndex);
     setActiveContent(content);
-    if (content !== "quiz") {
-      setQuizAnswers({});
-      setQuizSubmitted(false);
-    }
   };
 
   // Load last quiz attempt when switching to a completed quiz
