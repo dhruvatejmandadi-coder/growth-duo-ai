@@ -139,36 +139,6 @@ export default function CourseView() {
     setActiveContent(content);
   };
 
-  // Load last quiz attempt when switching to a completed quiz
-  useEffect(() => {
-    if (activeContent !== "quiz" || !mod || !user) return;
-    const isQuizDone = getSectionDone(mod.id, "quiz");
-    if (!isQuizDone) return;
-
-    setLoadingQuizAttempt(true);
-    (async () => {
-      const { data } = await supabase
-        .from("quiz_attempts")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("module_id", mod.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (data?.answers && typeof data.answers === "object") {
-        // Convert answers back to Record<number, number>
-        const answers: Record<number, number> = {};
-        for (const [key, value] of Object.entries(data.answers as Record<string, number>)) {
-          answers[Number(key)] = value;
-        }
-        setQuizAnswers(answers);
-        setQuizSubmitted(true);
-      }
-      setLoadingQuizAttempt(false);
-    })();
-  }, [activeContent, activeModule, mod?.id, user]);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
