@@ -22,6 +22,8 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/AdminDashboard";
+import CourseCreator from "./pages/CourseCreator";
+import PublicCourses from "./pages/PublicCourses";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +45,8 @@ const App = () => (
             {/* Dashboard pages — persistent sidebar */}
             <Route element={<DashboardLayout />}>
               <Route path="/courses" element={<Courses />} />
+              <Route path="/courses/create" element={<CourseCreator />} />
+              <Route path="/courses/explore" element={<PublicCourses />} />
               <Route path="/courses/:id" element={<CourseView />} />
               <Route path="/community" element={<Community />} />
               <Route path="/challenges" element={<Challenges />} />

@@ -24,6 +24,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCourseProgress } from "@/hooks/useCourseProgress";
 import InteractiveLab from "@/components/labs/InteractiveLab";
 import LessonSlides from "@/components/courses/LessonSlides";
+import QuizSlides from "@/components/courses/QuizSlides";
+import AiTutor from "@/components/courses/AiTutor";
 import CourseCompletionScreen from "@/components/courses/CourseCompletionScreen";
 
 type Module = {
@@ -62,10 +64,7 @@ export default function CourseView() {
   const [modules, setModules] = useState<Module[]>([]);
   const [activeModule, setActiveModule] = useState(0);
   const [activeContent, setActiveContent] = useState<ContentType>("lesson");
-  const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
-  const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [loadingQuizAttempt, setLoadingQuizAttempt] = useState(false);
 
   useEffect(() => {
     if (id) fetchCourse();
@@ -110,25 +109,18 @@ export default function CourseView() {
     completeSection(mod.id, "lab", modules.length);
   }, [mod, completeSection, modules.length]);
 
-  const handleQuizSubmit = async () => {
-    if (!mod) return;
-    setQuizSubmitted(true);
-
-    const quizQuestions = mod.quiz as any[];
-    const score = quizQuestions.filter((q: any, i: number) => quizAnswers[i] === q.correct).length;
-    const total = quizQuestions.length;
+  const handleQuizSubmit = async (answers: Record<number, number>, score: number, total: number) => {
+    if (!mod || !user) return;
     const pct = total > 0 ? score / total : 0;
     const passed = pct >= PASS_THRESHOLD;
 
-    if (user) {
-      await supabase.from("quiz_attempts").insert({
-        user_id: user.id,
-        module_id: mod.id,
-        answers: quizAnswers,
-        score,
-        total,
-      });
-    }
+    await supabase.from("quiz_attempts").insert({
+      user_id: user.id,
+      module_id: mod.id,
+      answers,
+      score,
+      total,
+    });
 
     if (passed) {
       completeSection(mod.id, "quiz", modules.length);
@@ -142,50 +134,10 @@ export default function CourseView() {
     }
   };
 
-  const resetQuiz = () => {
-    setQuizAnswers({});
-    setQuizSubmitted(false);
-    if (mod) uncompleteSection(mod.id, "quiz");
-  };
-
   const selectItem = (moduleIndex: number, content: ContentType) => {
     setActiveModule(moduleIndex);
     setActiveContent(content);
-    if (content !== "quiz") {
-      setQuizAnswers({});
-      setQuizSubmitted(false);
-    }
   };
-
-  // Load last quiz attempt when switching to a completed quiz
-  useEffect(() => {
-    if (activeContent !== "quiz" || !mod || !user) return;
-    const isQuizDone = getSectionDone(mod.id, "quiz");
-    if (!isQuizDone) return;
-
-    setLoadingQuizAttempt(true);
-    (async () => {
-      const { data } = await supabase
-        .from("quiz_attempts")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("module_id", mod.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (data?.answers && typeof data.answers === "object") {
-        // Convert answers back to Record<number, number>
-        const answers: Record<number, number> = {};
-        for (const [key, value] of Object.entries(data.answers as Record<string, number>)) {
-          answers[Number(key)] = value;
-        }
-        setQuizAnswers(answers);
-        setQuizSubmitted(true);
-      }
-      setLoadingQuizAttempt(false);
-    })();
-  }, [activeContent, activeModule, mod?.id, user]);
 
   if (loading) {
     return (
@@ -194,11 +146,6 @@ export default function CourseView() {
       </div>
     );
   }
-
-  const quizScore = mod ? (mod.quiz as any[]).filter((q: any, i: number) => quizAnswers[i] === q.correct).length : 0;
-  const quizTotal = mod?.quiz?.length || 0;
-  const quizPct = quizTotal > 0 ? Math.round((quizScore / quizTotal) * 100) : 0;
-  const quizPassed = quizPct >= PASS_THRESHOLD * 100;
 
   return (
     <>
@@ -325,76 +272,19 @@ export default function CourseView() {
               )}
 
               {/* Quiz */}
-              {activeContent === "quiz" && !loadingQuizAttempt && (
-                <div className="space-y-4">
-                  {getSectionDone(mod.id, "quiz") && !quizSubmitted && (
-                    <Card className="border-green-500/20 bg-green-500/[0.04]">
-                      <CardContent className="p-4 flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-green-500" />
-                        <span className="text-[13px] font-medium">Quiz passed! You can retake it if you'd like.</span>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {(mod.quiz as any[])?.map((q: any, qi: number) => (
-                    <Card key={qi} className="border-border/50">
-                      <CardContent className="p-6">
-                        <p className="font-medium mb-3 text-[15px]">{qi + 1}. {q.question}</p>
-                        <div className="space-y-2">
-                          {q.options?.map((opt: string, oi: number) => {
-                            const selected = quizAnswers[qi] === oi;
-                            const isCorrect = oi === q.correct;
-                            let style = "border-border/50 hover:border-primary/20";
-                            if (quizSubmitted) {
-                              if (isCorrect) style = "border-green-500/40 bg-green-500/[0.06]";
-                              else if (selected && !isCorrect) style = "border-destructive/40 bg-destructive/[0.06]";
-                            } else if (selected) {
-                              style = "border-primary/40 bg-primary/[0.06]";
-                            }
-                            return (
-                              <button
-                                key={oi}
-                                disabled={quizSubmitted}
-                                onClick={() => setQuizAnswers((prev) => ({ ...prev, [qi]: oi }))}
-                                className={`w-full text-left px-4 py-3 rounded-lg border text-[13px] transition-all duration-150 ${style}`}
-                              >
-                                {opt}
-                              </button>
-                            );
-                          })}
-                        </div>
-                        {quizSubmitted && q.explanation && (
-                          <p className="mt-3 text-[13px] text-muted-foreground bg-secondary/30 p-3 rounded-lg">
-                            💡 {q.explanation}
-                          </p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-
-                  <div className="flex items-center gap-3">
-                    {!quizSubmitted ? (
-                      <Button onClick={handleQuizSubmit} disabled={Object.keys(quizAnswers).length < (mod.quiz?.length || 0)}>
-                        Submit Quiz
-                      </Button>
-                    ) : (
-                      <Button variant="outline" onClick={resetQuiz}>Retry Quiz</Button>
-                    )}
-
-                    {quizSubmitted && (
-                      <div className="flex items-center gap-2">
-                        <Badge variant={quizPassed ? "default" : "destructive"} className="text-[11px]">
-                          {quizPct}% ({quizScore}/{quizTotal})
-                        </Badge>
-                        {!quizPassed && (
-                          <span className="text-[13px] text-muted-foreground">Need 70% to pass</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
+              {activeContent === "quiz" && (
+                <QuizSlides
+                  questions={mod.quiz as any[]}
+                  onSubmit={handleQuizSubmit}
+                  isCompleted={getSectionDone(mod.id, "quiz")}
+                />
               )}
             </div>
+
+            {/* AI Tutor */}
+            {activeContent === "lesson" && course && (
+              <AiTutor moduleTitle={mod.title} courseTitle={course.title} />
+            )}
           </main>
         )}
       </div>

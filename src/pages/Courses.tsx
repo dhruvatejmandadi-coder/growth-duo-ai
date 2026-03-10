@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen, Plus, Sparkles, Loader2, Trash2, ArrowRight, Paperclip, X, FileText, Crown } from "lucide-react";
+import { BookOpen, Plus, Sparkles, Loader2, Trash2, ArrowRight, Paperclip, X, FileText, Crown, PenTool, Globe } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -263,6 +263,18 @@ export default function Courses() {
             <p className="text-xs text-muted-foreground/60 mt-4">
               Create an account to save your courses.
             </p>
+          )}
+
+          {/* Creator + Explore buttons */}
+          {user && (
+            <div className="flex items-center justify-center gap-3 mt-6">
+              <Button variant="outline" onClick={() => navigate("/courses/create")} className="gap-2">
+                <PenTool className="w-4 h-4" /> Course Creator
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/courses/explore")} className="gap-2">
+                <Globe className="w-4 h-4" /> Explore Public
+              </Button>
+            </div>
           )}
         </div>
 
