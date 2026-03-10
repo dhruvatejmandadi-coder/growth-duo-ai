@@ -24,6 +24,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCourseProgress } from "@/hooks/useCourseProgress";
 import InteractiveLab from "@/components/labs/InteractiveLab";
 import LessonSlides from "@/components/courses/LessonSlides";
+import QuizSlides from "@/components/courses/QuizSlides";
+import AiTutor from "@/components/courses/AiTutor";
 import CourseCompletionScreen from "@/components/courses/CourseCompletionScreen";
 
 type Module = {
