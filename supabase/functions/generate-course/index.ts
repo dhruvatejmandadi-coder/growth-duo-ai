@@ -185,10 +185,22 @@ function generateSimulationFallback(title: string) {
       { name: p3, icon: "📉", unit: "%", min: 0, max: 100, default: 50 },
     ],
     thresholds: [
-      { label: "Excellent", min_percent: 75, message: "Outstanding performance across all factors." },
-      { label: "Good", min_percent: 50, message: "Solid results with room for improvement." },
-      { label: "Needs Work", min_percent: 0, message: "Consider revisiting your approach." },
-    ],
+      [
+        { label: `${t} Mastery`, min_percent: 75, message: `Exceptional command of ${t.toLowerCase()} — your decisions created strong outcomes across all dimensions.` },
+        { label: `Developing ${t} Insight`, min_percent: 50, message: `You're building a solid understanding of ${t.toLowerCase()}, but some tradeoffs could be managed better.` },
+        { label: `${t} Foundations`, min_percent: 0, message: `Your ${t.toLowerCase()} approach needs refinement — revisit the tradeoffs and try a different strategy.` },
+      ],
+      [
+        { label: `Strategic Leader`, min_percent: 75, message: `Your ${t.toLowerCase()} decisions demonstrate strong strategic thinking and balance.` },
+        { label: `Competent Manager`, min_percent: 50, message: `Reasonable ${t.toLowerCase()} decisions, though some areas were under-prioritized.` },
+        { label: `Novice Analyst`, min_percent: 0, message: `Your ${t.toLowerCase()} strategy missed key factors — consider the full picture next time.` },
+      ],
+      [
+        { label: `System Optimizer`, min_percent: 75, message: `You found an effective balance across all ${t.toLowerCase()} factors — impressive systemic thinking.` },
+        { label: `Partial Optimizer`, min_percent: 50, message: `Some ${t.toLowerCase()} factors improved, but others suffered — tradeoff management is key.` },
+        { label: `Imbalanced Approach`, min_percent: 0, message: `Your ${t.toLowerCase()} decisions created significant imbalances — try distributing focus more evenly.` },
+      ],
+    ][h % 3],
     decisions: questions.map(q => ({
       question: q.q,
       emoji: q.emoji,
