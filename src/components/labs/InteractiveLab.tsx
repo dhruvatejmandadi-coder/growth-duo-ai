@@ -35,6 +35,7 @@ type Decision = {
 type SimulationData = {
   title?: string;
   description?: string;
+  intro?: string;
   parameters: Parameter[];
   thresholds: { label: string; min_percent: number; message: string }[];
   decisions?: Decision[];
