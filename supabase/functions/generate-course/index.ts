@@ -140,9 +140,44 @@ function isValidDecisionLab(ld: any): boolean {
 
 function generateSimulationFallback(title: string) {
   const t = title || "Topic";
-  const p1 = `${t} Efficiency`;
-  const p2 = `${t} Quality`;
-  const p3 = `${t} Sustainability`;
+  const h = hashString(t);
+  
+  const paramSets = [
+    [`${t} Efficiency`, `${t} Quality`, `${t} Sustainability`],
+    [`${t} Growth Rate`, `${t} Stability`, `${t} Public Trust`],
+    [`${t} Output`, `${t} Resource Usage`, `${t} Innovation`],
+    [`${t} Adoption`, `${t} Cost Effectiveness`, `${t} Long-term Viability`],
+  ];
+  const [p1, p2, p3] = paramSets[h % paramSets.length];
+
+  const questionSets = [
+    [
+      { q: `A stakeholder demands faster ${t.toLowerCase()} results. How do you respond?`, emoji: "🔬",
+        c: [{ text: "Accelerate timelines", explanation: `Pushing faster improves short-term ${t.toLowerCase()} output but strains resources.`, s: { [p1]: 80, [p2]: 45, [p3]: 40 } },
+            { text: "Maintain current pace", explanation: `Steady progress preserves quality and team morale.`, s: { [p1]: 55, [p2]: 70, [p3]: 65 } }] },
+      { q: `New data reveals a flaw in your ${t.toLowerCase()} approach. What now?`, emoji: "⚡",
+        c: [{ text: "Pivot strategy completely", explanation: `A full pivot addresses the flaw but disrupts ongoing work.`, s: { [p1]: 50, [p2]: 85, [p3]: 60 } },
+            { text: "Adapt incrementally", explanation: `Gradual changes minimize disruption while still improving.`, s: { [p1]: 60, [p2]: 65, [p3]: 75 } }] },
+    ],
+    [
+      { q: `Resources for ${t.toLowerCase()} are being cut by 30%. Where do you focus?`, emoji: "💰",
+        c: [{ text: "Protect core operations", explanation: `Maintaining essentials ensures baseline ${t.toLowerCase()} continues.`, s: { [p1]: 65, [p2]: 75, [p3]: 50 } },
+            { text: "Invest in automation", explanation: `Automation reduces future costs but requires upfront effort.`, s: { [p1]: 50, [p2]: 55, [p3]: 80 } }] },
+      { q: `A competitor has overtaken your ${t.toLowerCase()} results. Your move?`, emoji: "🏃",
+        c: [{ text: "Innovate aggressively", explanation: `Bold innovation can leapfrog competitors but carries risk.`, s: { [p1]: 85, [p2]: 40, [p3]: 55 } },
+            { text: "Improve existing strengths", explanation: `Refining what works builds reliable, sustainable advantage.`, s: { [p1]: 60, [p2]: 80, [p3]: 70 } }] },
+    ],
+    [
+      { q: `Public opinion on ${t.toLowerCase()} is shifting negatively. How do you respond?`, emoji: "📢",
+        c: [{ text: "Launch transparency initiative", explanation: `Openness rebuilds trust but exposes internal challenges.`, s: { [p1]: 55, [p2]: 60, [p3]: 80 } },
+            { text: "Double down on results", explanation: `Strong outcomes speak for themselves, but perception may lag.`, s: { [p1]: 80, [p2]: 70, [p3]: 45 } }] },
+      { q: `Two departments disagree on ${t.toLowerCase()} priorities. How do you mediate?`, emoji: "🤝",
+        c: [{ text: "Let data decide", explanation: `Evidence-based decisions are fair but may ignore context.`, s: { [p1]: 70, [p2]: 75, [p3]: 55 } },
+            { text: "Compromise on both sides", explanation: `Balanced concessions maintain relationships and momentum.`, s: { [p1]: 60, [p2]: 60, [p3]: 70 } }] },
+    ],
+  ];
+  const questions = questionSets[h % questionSets.length];
+
   return {
     parameters: [
       { name: p1, icon: "📊", unit: "%", min: 0, max: 100, default: 50 },
@@ -154,24 +189,11 @@ function generateSimulationFallback(title: string) {
       { label: "Good", min_percent: 50, message: "Solid results with room for improvement." },
       { label: "Needs Work", min_percent: 0, message: "Consider revisiting your approach." },
     ],
-    decisions: [
-      {
-        question: `How would you approach improving ${t.toLowerCase()} outcomes?`,
-        emoji: "🔬",
-        choices: [
-          { text: "Prioritize efficiency", explanation: `Focuses resources on maximizing ${t.toLowerCase()} throughput at the cost of long-term viability.`, set_state: { [p1]: 80, [p2]: 45, [p3]: 40 } },
-          { text: "Balanced approach", explanation: `Spreads effort evenly across all dimensions of ${t.toLowerCase()}.`, set_state: { [p1]: 60, [p2]: 60, [p3]: 55 } },
-        ],
-      },
-      {
-        question: `A challenge arises in ${t.toLowerCase()}. What's your response?`,
-        emoji: "⚡",
-        choices: [
-          { text: "Invest in quality", explanation: `Improving quality standards strengthens long-term ${t.toLowerCase()} outcomes.`, set_state: { [p1]: 50, [p2]: 85, [p3]: 60 } },
-          { text: "Focus on sustainability", explanation: `Sustainable practices ensure ${t.toLowerCase()} remains viable over time.`, set_state: { [p1]: 45, [p2]: 55, [p3]: 80 } },
-        ],
-      },
-    ],
+    decisions: questions.map(q => ({
+      question: q.q,
+      emoji: q.emoji,
+      choices: q.c.map(c => ({ text: c.text, explanation: c.explanation, set_state: c.s })),
+    })),
   };
 }
 
@@ -199,9 +221,34 @@ function generateClassificationFallback(title: string) {
 
 function generatePolicyOptimizationFallback(title: string) {
   const t = title || "Topic";
-  const p1 = `${t} Performance`;
-  const p2 = `${t} Cost`;
-  const p3 = `${t} Risk`;
+  const h = hashString(t);
+  const paramSets = [
+    [`${t} Performance`, `${t} Cost`, `${t} Risk`],
+    [`${t} Reach`, `${t} Budget`, `${t} Compliance`],
+    [`${t} Speed`, `${t} Accuracy`, `${t} Scalability`],
+  ];
+  const [p1, p2, p3] = paramSets[h % paramSets.length];
+  
+  const scenarioSets = [
+    [
+      { q: `How do you allocate resources for ${t.toLowerCase()}?`, emoji: "🎯",
+        c: [{ text: "Aggressive investment", ex: "High performance but increased costs and risk.", s: { [p1]: 85, [p2]: 75, [p3]: 60 } },
+            { text: "Conservative strategy", ex: "Lower risk but moderate performance gains.", s: { [p1]: 60, [p2]: 40, [p3]: 30 } }] },
+      { q: `A new opportunity emerges in ${t.toLowerCase()}. How do you respond?`, emoji: "💡",
+        c: [{ text: "Seize the opportunity", ex: "Potential for high reward but with elevated risk.", s: { [p1]: 80, [p2]: 65, [p3]: 55 } },
+            { text: "Evaluate carefully", ex: "Measured approach that maintains stability.", s: { [p1]: 65, [p2]: 50, [p3]: 35 } }] },
+    ],
+    [
+      { q: `Regulations around ${t.toLowerCase()} are tightening. How do you adapt?`, emoji: "📜",
+        c: [{ text: "Exceed requirements proactively", ex: "Builds trust and future-proofs operations, but costs more upfront.", s: { [p1]: 60, [p2]: 70, [p3]: 25 } },
+            { text: "Meet minimum standards", ex: "Saves budget now but may require costly changes later.", s: { [p1]: 75, [p2]: 45, [p3]: 50 } }] },
+      { q: `Your ${t.toLowerCase()} team is understaffed. What's the priority?`, emoji: "👥",
+        c: [{ text: "Hire specialists", ex: "Boosts quality but increases costs significantly.", s: { [p1]: 85, [p2]: 80, [p3]: 35 } },
+            { text: "Train existing team", ex: "Slower improvement but more sustainable.", s: { [p1]: 65, [p2]: 50, [p3]: 30 } }] },
+    ],
+  ];
+  const scenarios = scenarioSets[h % scenarioSets.length];
+
   return {
     title: `${t} Optimization`,
     description: `Optimize ${t.toLowerCase()} outcomes within the given constraints.`,
@@ -211,79 +258,110 @@ function generatePolicyOptimizationFallback(title: string) {
       { name: p3, icon: "⚠️", unit: "%", min: 0, max: 100, default: 50 },
     ],
     constraints: [
-      { parameter: p1, operator: ">", value: 60, label: `Keep ${t} performance above 60%` },
-      { parameter: p3, operator: "<", value: 40, label: `Keep ${t} risk below 40%` },
+      { parameter: p1, operator: ">", value: 60, label: `Keep ${t} ${p1.split(' ').pop()?.toLowerCase()} above 60%` },
+      { parameter: p3, operator: "<", value: 40, label: `Keep ${t} ${p3.split(' ').pop()?.toLowerCase()} below 40%` },
     ],
     max_decisions: 3,
-    decisions: [
-      {
-        question: `How do you allocate resources for ${t.toLowerCase()}?`,
-        emoji: "🎯",
-        choices: [
-          { text: "Aggressive investment", explanation: "High performance but increased costs and risk.", set_state: { [p1]: 85, [p2]: 75, [p3]: 60 } },
-          { text: "Conservative strategy", explanation: "Lower risk but moderate performance gains.", set_state: { [p1]: 60, [p2]: 40, [p3]: 30 } },
-        ],
-      },
-      {
-        question: `A new opportunity emerges in ${t.toLowerCase()}. How do you respond?`,
-        emoji: "💡",
-        choices: [
-          { text: "Seize the opportunity", explanation: "Potential for high reward but with elevated risk.", set_state: { [p1]: 80, [p2]: 65, [p3]: 55 } },
-          { text: "Evaluate carefully", explanation: "Measured approach that maintains stability.", set_state: { [p1]: 65, [p2]: 50, [p3]: 35 } },
-        ],
-      },
-    ],
+    decisions: scenarios.map(s => ({
+      question: s.q, emoji: s.emoji,
+      choices: s.c.map(c => ({ text: c.text, explanation: c.ex, set_state: c.s })),
+    })),
   };
 }
 
 function generateEthicalDilemmaFallback(title: string) {
   const t = title || "Topic";
-  const dims = [
-    { name: "Effectiveness", icon: "🎯", description: `How well ${t.toLowerCase()} achieves its goals` },
-    { name: "Fairness", icon: "⚖️", description: `How equitably ${t.toLowerCase()} impacts stakeholders` },
-    { name: "Sustainability", icon: "🌱", description: `Long-term viability of ${t.toLowerCase()} decisions` },
+  const h = hashString(t);
+  
+  const dimSets = [
+    [{ name: "Effectiveness", icon: "🎯", description: `How well ${t.toLowerCase()} achieves its goals` },
+     { name: "Fairness", icon: "⚖️", description: `How equitably ${t.toLowerCase()} impacts stakeholders` },
+     { name: "Sustainability", icon: "🌱", description: `Long-term viability of ${t.toLowerCase()} decisions` }],
+    [{ name: "Innovation", icon: "💡", description: `How much ${t.toLowerCase()} drives progress` },
+     { name: "Safety", icon: "🛡️", description: `Risk mitigation in ${t.toLowerCase()}` },
+     { name: "Accessibility", icon: "🌍", description: `How widely ${t.toLowerCase()} benefits people` }],
+    [{ name: "Profit", icon: "💰", description: `Financial returns from ${t.toLowerCase()}` },
+     { name: "Community", icon: "🏘️", description: `Social impact of ${t.toLowerCase()}` },
+     { name: "Environment", icon: "🌿", description: `Environmental footprint of ${t.toLowerCase()}` }],
   ];
+  const dims = dimSets[h % dimSets.length];
   const dn = dims.map(d => d.name);
-  const patterns = [
-    [{ [dn[0]]: 15, [dn[1]]: -10, [dn[2]]: 0 }, { [dn[0]]: -10, [dn[1]]: 15, [dn[2]]: 0 }],
-    [{ [dn[0]]: 0, [dn[1]]: 15, [dn[2]]: -10 }, { [dn[0]]: 0, [dn[1]]: -10, [dn[2]]: 15 }],
-    [{ [dn[0]]: -10, [dn[1]]: 0, [dn[2]]: 15 }, { [dn[0]]: 15, [dn[1]]: 0, [dn[2]]: -10 }],
+
+  const dilemmaTemplates = [
+    [
+      { q: `${t} can be optimized for speed or inclusivity. What do you prioritize?`, emoji: "⚖️",
+        c: [{ text: "Optimize for speed", ex: "Fast results but some groups may be left behind.", impacts: { [dn[0]]: 15, [dn[1]]: -10, [dn[2]]: 0 } },
+            { text: "Ensure inclusivity", ex: "Broader reach but slower progress.", impacts: { [dn[0]]: -10, [dn[1]]: 15, [dn[2]]: 5 } }] },
+      { q: `A cheaper method for ${t.toLowerCase()} has hidden downsides. Your call?`, emoji: "🤔",
+        c: [{ text: "Use the cheaper method", ex: "Saves money now but creates problems later.", impacts: { [dn[0]]: 10, [dn[1]]: -15, [dn[2]]: 5 } },
+            { text: "Pay more for the ethical option", ex: "Higher cost but aligns with values.", impacts: { [dn[0]]: -5, [dn[1]]: 10, [dn[2]]: 10 } }] },
+      { q: `Expanding ${t.toLowerCase()} requires sacrificing one area. Which?`, emoji: "🗣️",
+        c: [{ text: `Sacrifice short-term ${dn[2].toLowerCase()}`, ex: "Growth now at the expense of durability.", impacts: { [dn[0]]: 10, [dn[1]]: 5, [dn[2]]: -15 } },
+            { text: `Accept lower ${dn[0].toLowerCase()}`, ex: "Slower gains but a more resilient foundation.", impacts: { [dn[0]]: -15, [dn[1]]: 5, [dn[2]]: 10 } }] },
+    ],
+    [
+      { q: `A whistleblower exposes problems in ${t.toLowerCase()}. How do you react?`, emoji: "📢",
+        c: [{ text: "Full public disclosure", ex: "Builds long-term trust but causes short-term chaos.", impacts: { [dn[0]]: -10, [dn[1]]: 20, [dn[2]]: 0 } },
+            { text: "Internal resolution only", ex: "Maintains control but risks credibility if leaked.", impacts: { [dn[0]]: 10, [dn[1]]: -15, [dn[2]]: 5 } }] },
+      { q: `${t} data shows a vulnerable group is disproportionately affected. What now?`, emoji: "🏥",
+        c: [{ text: "Redesign for equity", ex: "Costly redesign but ethically sound.", impacts: { [dn[0]]: -10, [dn[1]]: 15, [dn[2]]: 10 } },
+            { text: "Maintain current approach", ex: "Efficient but perpetuates inequality.", impacts: { [dn[0]]: 15, [dn[1]]: -10, [dn[2]]: -5 } }] },
+      { q: `Fast-tracking ${t.toLowerCase()} could cut corners on quality. Worth it?`, emoji: "⏱️",
+        c: [{ text: "Fast-track it", ex: "Meets deadlines but quality suffers.", impacts: { [dn[0]]: 15, [dn[1]]: -10, [dn[2]]: -5 } },
+            { text: "Take the time needed", ex: "Better outcomes but misses the window.", impacts: { [dn[0]]: -5, [dn[1]]: 5, [dn[2]]: 15 } }] },
+    ],
   ];
+  const dilemmas = dilemmaTemplates[h % dilemmaTemplates.length];
+
   return {
     title: `${t} Ethical Dilemma`,
     description: `Navigate ethical tradeoffs in ${t.toLowerCase()}. Every choice has consequences.`,
     dimensions: dims,
-    decisions: [
-      {
-        question: `${t} can be optimized for results or fairness. What do you prioritize?`,
-        emoji: "⚖️",
-        choices: [
-          { text: "Maximize results", explanation: "Achieves goals but may disadvantage some stakeholders.", impacts: patterns[0][0] },
-          { text: "Ensure fairness", explanation: "Equitable outcomes but potentially less efficient.", impacts: patterns[0][1] },
-        ],
-      },
-      {
-        question: `A shortcut in ${t.toLowerCase()} saves time but raises concerns. Your call?`,
-        emoji: "🤔",
-        choices: [
-          { text: "Take the shortcut", explanation: "Quick gains but potential long-term drawbacks.", impacts: patterns[1][0] },
-          { text: "Do it properly", explanation: "Slower but builds lasting foundations.", impacts: patterns[1][1] },
-        ],
-      },
-      {
-        question: `${t} stakeholders disagree on direction. How do you resolve it?`,
-        emoji: "🗣️",
-        choices: [
-          { text: "Prioritize sustainability", explanation: "Long-term thinking over short-term wins.", impacts: patterns[2][0] },
-          { text: "Prioritize effectiveness", explanation: "Deliver results now, adapt later.", impacts: patterns[2][1] },
-        ],
-      },
-    ],
+    decisions: dilemmas.map(d => ({
+      question: d.q, emoji: d.emoji,
+      choices: d.c.map(c => ({ text: c.text, explanation: c.ex, impacts: c.impacts })),
+    })),
   };
 }
 
 function generateDecisionLabFallback(title: string) {
   const t = title || "Topic";
+  const h = hashString(t);
+  
+  const scenarioPool = [
+    {
+      scenario: `You are a consultant advising a city government on ${t.toLowerCase()}. The mayor wants rapid results before election season, but rushing could undermine public trust. Community leaders are divided on the best approach, and the budget only covers one major initiative.`,
+      question: `Given competing pressures, which strategy do you recommend for this ${t.toLowerCase()} initiative?`,
+      options: [
+        { id: "a", text: "Launch a high-visibility pilot program", consequence: `The pilot generates media attention and quick data, but it only reaches a small population. Critics argue it's performative. If results are mixed, scaling becomes politically difficult.`, is_best: false },
+        { id: "b", text: "Build a coalition with community stakeholders first", consequence: `Takes 2 months longer to launch, but community buy-in ensures the initiative addresses real needs. Implementation runs smoother and outcomes are more sustainable.`, is_best: true },
+        { id: "c", text: "Commission an expert report before acting", consequence: `The report takes 4 months. By the time it's ready, political momentum has faded and the budget is reallocated. The opportunity window closes.`, is_best: false },
+      ],
+      explanation: `Building a coalition first is best because ${t.toLowerCase()} initiatives succeed when they address actual community needs. Stakeholder engagement creates ownership and sustainability — core principles of effective ${t.toLowerCase()} strategy.`,
+    },
+    {
+      scenario: `You're leading a team at a mid-sized company tasked with improving ${t.toLowerCase()} outcomes. The CEO wants a 40% improvement within one quarter. Your team has identified three possible approaches, each with different tradeoffs in speed, cost, and long-term impact.`,
+      question: `Which approach would you choose to improve ${t.toLowerCase()} outcomes?`,
+      options: [
+        { id: "a", text: "Restructure the entire workflow", consequence: `Massive disruption in the short term. Productivity drops 25% for 6 weeks. But after the transition period, the 40% improvement target is exceeded and the new system is more resilient.`, is_best: false },
+        { id: "b", text: "Implement targeted improvements to bottlenecks", consequence: `Addresses the top 3 bottlenecks identified by data analysis. Achieves a 30% improvement within the quarter with minimal disruption. Sets up infrastructure for continued gains.`, is_best: true },
+        { id: "c", text: "Outsource the function entirely", consequence: `Quick results on paper, but institutional knowledge is lost. Quality control becomes harder and costs increase 20% annually. The company becomes dependent on external providers.`, is_best: false },
+      ],
+      explanation: `Targeted bottleneck improvements work best because they use data to focus resources where impact is highest, minimize disruption, and create a foundation for iterative improvement — a key principle in ${t.toLowerCase()}.`,
+    },
+    {
+      scenario: `A nonprofit focused on ${t.toLowerCase()} has received an unexpected $2M grant, but it comes with strings: the money must be spent within 18 months and measurable impact must be demonstrated. Your team of 12 is already at capacity with existing programs.`,
+      question: `How do you deploy the $2M grant effectively?`,
+      options: [
+        { id: "a", text: "Hire aggressively and launch a new flagship program", consequence: `You hire 8 new staff and launch a bold new initiative. But onboarding takes months, the new program has untested assumptions, and by month 12 you've spent 70% of the budget with limited measurable results.`, is_best: false },
+        { id: "b", text: "Scale proven programs and add evaluation infrastructure", consequence: `You expand 2 existing programs that already show results, hire 3 staff plus a data analyst, and invest in measurement tools. By month 15, you show clear impact data and the funder offers a renewal.`, is_best: true },
+        { id: "c", text: "Distribute grants to partner organizations", consequence: `Quick disbursement satisfies the timeline, but you lose control over quality and measurement. Partner reports are inconsistent. The funder questions your organization's capacity to lead.`, is_best: false },
+      ],
+      explanation: `Scaling proven programs is optimal because it leverages existing evidence of impact, reduces execution risk, and builds measurement capacity — ensuring ${t.toLowerCase()} outcomes are both real and demonstrable.`,
+    },
+  ];
+  const chosen = scenarioPool[h % scenarioPool.length];
+
   return {
     concept_knowledge: {
       definition: `${t} refers to the study and application of key principles that drive outcomes in this domain.`,
@@ -301,16 +379,12 @@ function generateDecisionLabFallback(title: string) {
       explanation: `${t} directly impacts how organizations, governments, and individuals make critical decisions. Understanding this concept helps you anticipate consequences and design better strategies in real-world situations.`,
       domain: "Strategic Decision-Making",
     },
-    scenario: `You are leading a critical ${t.toLowerCase()} initiative for a mid-sized organization. Resources are limited, stakeholders have high expectations, and the competitive landscape is shifting rapidly. You must choose a path forward that balances immediate results with long-term sustainability.`,
+    scenario: chosen.scenario,
     decision_challenge: {
-      question: `Given the pressures you face, which strategic approach would you take for this ${t.toLowerCase()} initiative?`,
-      options: [
-        { id: "a", text: "Aggressive push for quick results", consequence: `You achieve short-term gains but burn out the team and create technical debt. Within 6 months, quality issues emerge and stakeholder trust erodes.`, is_best: false },
-        { id: "b", text: "Balanced phased approach", consequence: `You deliver incremental wins while building a sustainable foundation. Stakeholders see steady progress and the team remains motivated. Long-term outcomes are strong.`, is_best: true },
-        { id: "c", text: "Conservative wait-and-see", consequence: `You avoid risk but miss the market window. Competitors move ahead and stakeholders lose confidence in your leadership. The initiative stalls.`, is_best: false },
-      ],
+      question: chosen.question,
+      options: chosen.options,
     },
-    best_decision_explanation: `The balanced phased approach is best because it manages competing pressures without sacrificing long-term viability. By delivering incremental wins, you maintain stakeholder confidence while building a sustainable foundation — a core principle of effective ${t.toLowerCase()} strategy.`,
+    best_decision_explanation: chosen.explanation,
   };
 }
 /* ===============================
