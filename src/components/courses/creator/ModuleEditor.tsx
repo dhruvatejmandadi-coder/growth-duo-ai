@@ -48,6 +48,7 @@ export default function ModuleEditor({ module, onChange }: Props) {
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground">
               Use <code className="bg-secondary px-1 rounded">---</code> to separate slides. Use <code className="bg-secondary px-1 rounded">## Heading</code> for slide titles.
+              Add images with <code className="bg-secondary px-1 rounded">![description](image-url)</code>
             </p>
             <Textarea
               placeholder={`## What is Supply?\n\n- Supply is the quantity of a good...\n\n---\n\n## What is Demand?\n\n- Demand represents...`}

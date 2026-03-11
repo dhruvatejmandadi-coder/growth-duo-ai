@@ -106,9 +106,15 @@ export default function LessonSlides({ content, youtubeUrl, youtubeTitle, onComp
 
           <div
             key={current}
-            className="prose prose-base dark:prose-invert max-w-none text-foreground prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-code:text-accent prose-code:bg-secondary prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-pre:bg-secondary prose-pre:border prose-pre:border-border prose-li:text-foreground min-h-[300px] animate-fade-in"
+            className="prose prose-base dark:prose-invert max-w-none text-foreground prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-code:text-accent prose-code:bg-secondary prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-pre:bg-secondary prose-pre:border prose-pre:border-border prose-li:text-foreground prose-img:rounded-lg prose-img:shadow-md prose-img:mx-auto prose-img:max-h-[400px] min-h-[300px] animate-fade-in"
           >
-            <ReactMarkdown>{body}</ReactMarkdown>
+            <ReactMarkdown
+              components={{
+                img: ({ node, ...props }) => (
+                  <img {...props} loading="lazy" className="rounded-lg shadow-md mx-auto max-h-[400px] object-contain" />
+                ),
+              }}
+            >{body}</ReactMarkdown>
           </div>
 
           <div className="flex items-center justify-between mt-6 pt-4 border-t border-border">
