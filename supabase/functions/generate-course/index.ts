@@ -1103,11 +1103,35 @@ For math_lab, lab_data format:
 
 PREFER decision_lab for at least 1-2 modules per course (unless it's a math course). Mix lab types across modules. Do NOT use the same lab_type for every module (except math courses which should always use math_lab).
 
+=== 🔥 REPEND LEARNING FORMULA — CRITICAL FOR ALL LABS ===
+Every lab MUST follow this learning loop:
+🌎 Relevance → 🎭 Scenario → 📊 Information → 🧠 Decision → ⚡ Consequence → ✅ Insight
+
+This means every lab_data object (except math_lab) MUST include these additional fields:
+{
+  "repend_intro": {
+    "relevance": "1-2 sentences explaining WHERE this concept is used in the real world (be specific: jobs, industries, daily life)",
+    "role": "The role the student plays (e.g., 'a hospital operations manager', 'a startup CEO', 'an environmental engineer')",
+    "scenario_context": "2-3 sentences setting the scene. What's the situation? What pressure exists? Why does it matter NOW?",
+    "information": ["Key fact 1 the student needs", "Key fact 2", "Key fact 3"],
+    "objective": "1 sentence: what skill or insight will the student gain?"
+  },
+  "key_insight": "After the lab ends, explain the core lesson in 1-2 clear sentences. This creates the 'clarity moment'."
+}
+
+REPEND RULES:
+- The "role" MUST be specific (not "a decision-maker" but "the CFO of a struggling retail chain")
+- The "relevance" MUST name a real industry, job, or situation
+- The "information" MUST be data, facts, or context the student needs BEFORE deciding
+- The "key_insight" MUST explain WHY the best approach works, connecting theory to practice
+- NEVER use generic relevance like "this concept is important" — be SPECIFIC
+
 === SIMULATION LAB (lab_type: "simulation") ===
 lab_data format:
 {
   "title": "<Topic> Simulation",
-  "intro": "A 1-2 sentence explanation of what this simulation explores and why it matters (topic-specific, NOT generic)",
+  "repend_intro": { ... (see above) },
+  "key_insight": "The core lesson after completing all decisions",
   "parameters": [
     {"name": "<TOPIC-SPECIFIC FACTOR>", "icon": "📊", "unit": "%", "min": 0, "max": 100, "default": 50}
   ],
@@ -1127,12 +1151,14 @@ lab_data format:
     }
   ]
 }
-RULES: 3 parameters, 2-3 decisions with 2 choices each. Parameter names MUST be domain-specific (e.g. "GDP Growth", "Inflation Rate" for Economics). NEVER use generic names like "Understanding" or "Confidence". Threshold labels MUST be topic-specific (e.g. "Market Leader" / "Stable Business" / "At Risk" for business, "Ecosystem Thriving" / "Ecosystem Stressed" / "Ecosystem Collapse" for environment). NEVER use generic "Excellent" / "Good" / "Needs Work". Every choice MUST have "set_state" mapping ALL parameter names to integers 0-100. Include "title" and "intro" fields to explain the simulation context before starting.
+RULES: 3 parameters, 2-3 decisions with 2 choices each. Parameter names MUST be domain-specific. NEVER use generic names. Threshold labels MUST be topic-specific. Every choice MUST have "set_state" mapping ALL parameter names to integers 0-100.
 
 === CLASSIFICATION LAB (lab_type: "classification") ===
 lab_data format:
 {
   "title": "...", "description": "...",
+  "repend_intro": { ... (see above) },
+  "key_insight": "The core lesson after classifying all items",
   "categories": [{"name": "Cat A", "description": "...", "color": "#hex"}],
   "items": [{"content": "...", "correctCategory": "Cat A", "explanation": "..."}]
 }
@@ -1142,6 +1168,8 @@ RULES: 3-4 categories, 6-8 items minimum.
 lab_data format:
 {
   "title": "...", "description": "...",
+  "repend_intro": { ... (see above) },
+  "key_insight": "The core lesson about optimization under constraints",
   "parameters": [
     {"name": "<TOPIC VARIABLE>", "icon": "📊", "unit": "%", "min": 0, "max": 100, "default": 50}
   ],
@@ -1159,12 +1187,14 @@ lab_data format:
     }
   ]
 }
-RULES: 3 parameters, 2-3 constraints, max_decisions limits how many choices the student can make. Student must reach ALL constraint targets within the decision limit.
+RULES: 3 parameters, 2-3 constraints, max_decisions limits how many choices the student can make.
 
 === ETHICAL DILEMMA LAB (lab_type: "ethical_dilemma") ===
 lab_data format:
 {
   "title": "...", "description": "...",
+  "repend_intro": { ... (see above) },
+  "key_insight": "The core lesson about ethical balance",
   "dimensions": [
     {"name": "Profit", "icon": "💰", "description": "Financial performance"},
     {"name": "Ethics", "icon": "⚖️", "description": "Moral responsibility"},
@@ -1180,7 +1210,7 @@ lab_data format:
     }
   ]
 }
-RULES: 3-4 dimensions, 3-4 dilemmas. Every choice MUST improve at least one dimension AND harm at least one other. Use "impacts" (deltas, -50 to +50), NOT "set_state". Student is scored on BALANCE across dimensions.
+RULES: 3-4 dimensions, 3-4 dilemmas. Every choice MUST improve at least one dimension AND harm at least one other. Use "impacts" (deltas, -50 to +50), NOT "set_state".
 
 === DECISION LAB (lab_type: "decision_lab") ===
 lab_data format:
@@ -1210,11 +1240,8 @@ RULES:
 - Scenario must be UNIQUE for every topic — never reuse scenarios
 - 3-4 decision options, each representing a different strategy
 - No obviously wrong answers — all options should seem reasonable
-- Each option must have a detailed consequence explaining what would happen
 - Exactly ONE option should have is_best: true
-- best_decision_explanation must connect reasoning back to the concept
-- This lab type is PREFERRED for business, strategy, engineering, negotiation, social science topics
-- Decision options must be specific and realistic — avoid generic choices like "increase funding"
+- Decision options must be specific and realistic
 
 ${filePath ? "IMPORTANT: The user has uploaded SOURCE MATERIAL. You MUST base the course content directly on the material provided. Extract key concepts, facts, and structure from the source material. Do NOT generate generic content — every lesson, lab scenario, and quiz question should reference or build upon the uploaded material." : ""}
 Generate 4-6 modules with a good mix of lab types. Include at least 1-2 decision_lab modules.`,
