@@ -301,6 +301,18 @@ function generatePolicyOptimizationFallback(title: string) {
   return {
     title: `${t} Optimization`,
     description: `Optimize ${t.toLowerCase()} outcomes within the given constraints.`,
+    repend_intro: {
+      relevance: `In the real world, ${t.toLowerCase()} decisions are never unlimited. Leaders must achieve targets while operating under strict constraints — budget limits, time pressures, and resource scarcity.`,
+      role: `a policy advisor tasked with optimizing ${t.toLowerCase()} outcomes for your organization`,
+      scenario_context: `You have a limited number of decisions to make. Each one shifts the metrics — but you must hit ALL constraint targets by the end. Strategy and sequencing matter.`,
+      information: [
+        `You're managing: ${p1}, ${p2}, and ${p3}`,
+        `Constraints define minimum/maximum thresholds you must meet`,
+        `You only get ${3} decisions — choose wisely`,
+      ],
+      objective: `Learn to optimize ${t.toLowerCase()} outcomes within realistic constraints.`,
+    },
+    key_insight: `In ${t.toLowerCase()}, meeting all constraints simultaneously requires strategic thinking — not just maximizing one metric. The best decision-makers sequence their choices to create compounding positive effects.`,
     parameters: [
       { name: p1, icon: "🎯", unit: "%", min: 0, max: 100, default: 50 },
       { name: p2, icon: "💰", unit: "%", min: 0, max: 100, default: 50 },
