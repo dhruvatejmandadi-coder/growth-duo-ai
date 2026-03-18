@@ -397,3 +397,4 @@ export default function InteractiveLab({ labType, labData, labTitle, labDescript
   }
 
   return <LabEmptyState labType={labType} />;
+}
