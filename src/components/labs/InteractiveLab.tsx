@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { TrendingUp, TrendingDown, Minus, MessageCircleQuestion, RotateCcw, CheckCircle2, ChevronRight, Lightbulb } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import DynamicLab from "./DynamicLab";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -383,8 +384,17 @@ export default function InteractiveLab({ labType, labData, labTitle, labDescript
     return <MathLab data={labData} onComplete={onComplete} isCompleted={isCompleted} />;
   }
 
-  // Default: Simulation
+  // Default: Try Simulation first, then DynamicLab as catch-all
   const hasSimulationData = labData?.parameters?.length > 0;
-  if (!hasSimulationData) return <LabEmptyState labType={labType} />;
-  return <SimulationLabInline data={labData} onComplete={onComplete} isCompleted={isCompleted} />;
+  if (hasSimulationData) {
+    return <SimulationLabInline data={labData} onComplete={onComplete} isCompleted={isCompleted} />;
+  }
+
+  // Catch-all: DynamicLab renders any AI-generated structure
+  const hasAnyContent = labData && typeof labData === "object" && Object.keys(labData).length > 1;
+  if (hasAnyContent) {
+    return <DynamicLab data={labData} onComplete={onComplete} isCompleted={isCompleted} />;
+  }
+
+  return <LabEmptyState labType={labType} />;
 }
