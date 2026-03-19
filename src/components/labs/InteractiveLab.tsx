@@ -1,331 +1,19 @@
-import { useState, useMemo, useEffect } from "react";
-import { TrendingUp, TrendingDown, Minus, MessageCircleQuestion, RotateCcw, CheckCircle2, ChevronRight, Lightbulb } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import DynamicLab from "./DynamicLab";
-import { Slider } from "@/components/ui/slider";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import ClassificationLab from "./ClassificationLab";
-import PolicyOptimizationLab from "./PolicyOptimizationLab";
-import EthicalDilemmaLab from "./EthicalDilemmaLab";
-import DecisionLab from "./DecisionLab";
-import MathLab from "./MathLab";
-import LabIntro from "./LabIntro";
-import type { LabIntroData } from "./LabIntro";
-
-/* ================= TYPES ================= */
-
-type Parameter = {
-  name: string;
-  icon: string;
-  unit: string;
-  min: number;
-  max: number;
-  default: number;
-  description?: string;
-};
-
-type Decision = {
-  question: string;
-  emoji?: string;
-  choices: {
-    text: string;
-    explanation?: string;
-    set_state: Record<string, number>;
-  }[];
-};
-
-type SimulationData = {
-  title?: string;
-  description?: string;
-  intro?: string;
-  repend_intro?: LabIntroData;
-  key_insight?: string;
-  parameters: Parameter[];
-  thresholds: { label: string; min_percent: number; message: string }[];
-  decisions?: Decision[];
-};
+import { Loader2, RefreshCw, AlertTriangle } from "lucide-react";
+import DynamicLab from "./DynamicLab";
 
 type Props = {
   labType?: string | null;
   labData?: any;
   labTitle?: string | null;
   labDescription?: string | null;
+  labGenerationStatus?: string | null;
+  labError?: string | null;
   onComplete?: () => void;
   isCompleted?: boolean;
+  onRetryGeneration?: () => void;
 };
-
-/* ================= HELPERS ================= */
-
-function getParamLevel(value: number, min: number, max: number) {
-  const pct = ((value - min) / (max - min)) * 100;
-  if (pct >= 75) return { level: "high", color: "text-green-500", icon: TrendingUp };
-  if (pct >= 35) return { level: "mid", color: "text-yellow-500", icon: Minus };
-  return { level: "low", color: "text-red-500", icon: TrendingDown };
-}
-
-/* ================= AUTO-FIX: CONVERT TO SET_STATE ================= */
-
-function ensureDecisionSetState(decisions: Decision[], parameters: Parameter[]): Decision[] {
-  if (!decisions?.length || !parameters?.length) return decisions ?? [];
-
-  return decisions.map((decision) => ({
-    ...decision,
-    choices: decision.choices.map((choice) => {
-      if (choice.set_state && Object.keys(choice.set_state).length > 0) {
-        const filled: Record<string, number> = {};
-        for (const p of parameters) {
-          if (typeof choice.set_state[p.name] !== "number") {
-            console.error(`[SimLab] Missing slider "${p.name}" in set_state. Defaulting to 50.`);
-          }
-          filled[p.name] = Math.max(0, Math.min(100, choice.set_state[p.name] ?? 50));
-        }
-        return { ...choice, set_state: filled };
-      }
-
-      console.error("[SimLab] Choice missing set_state entirely:", choice.text);
-      const setState: Record<string, number> = {};
-      for (const p of parameters) {
-        setState[p.name] = p.default ?? 50;
-      }
-      return { ...choice, set_state: setState };
-    }),
-  }));
-}
-
-/* ================= SIMULATION ================= */
-
-function SimulationLabInline({ data, onComplete, isCompleted }: { data: SimulationData; onComplete?: () => void; isCompleted?: boolean }) {
-  const parameters = useMemo(() => data.parameters ?? [], [data]);
-  const thresholds = useMemo(() => data.thresholds ?? [], [data]);
-  const rawDecisions = useMemo(() => data.decisions ?? [], [data]);
-  const decisions = useMemo(() => ensureDecisionSetState(rawDecisions, parameters), [rawDecisions, parameters]);
-
-  const [showIntro, setShowIntro] = useState(true);
-  const [values, setValues] = useState<Record<string, number>>({});
-  const [currentDecision, setCurrentDecision] = useState(0);
-  const [answered, setAnswered] = useState<Record<number, number>>({});
-
-  useEffect(() => {
-    const initial = Object.fromEntries(parameters.map((p) => [p.name, p.default]));
-    setValues(initial);
-    setCurrentDecision(0);
-    setAnswered({});
-    setShowIntro(true);
-  }, [data, parameters]);
-
-  const totalPercent = useMemo(() => {
-    if (!parameters.length) return 0;
-    const total = parameters.reduce((sum, p) => {
-      const pct = ((values[p.name] ?? p.default) - p.min) / (p.max - p.min);
-      return sum + pct;
-    }, 0);
-    return Math.round((total / parameters.length) * 100);
-  }, [values, parameters]);
-
-  const threshold = useMemo(() => {
-    if (!thresholds.length) return null;
-    const sorted = [...thresholds].sort((a, b) => b.min_percent - a.min_percent);
-    return sorted.find((t) => totalPercent >= t.min_percent) || sorted[sorted.length - 1];
-  }, [totalPercent, thresholds]);
-
-  const handleDecision = (dIdx: number, cIdx: number) => {
-    if (answered[dIdx] !== undefined) return;
-    const choice = decisions[dIdx]?.choices[cIdx];
-    if (!choice) return;
-
-    setValues((prev) => {
-      const next = { ...prev };
-      const setState = choice.set_state || {};
-      for (const p of parameters) {
-        next[p.name] = Math.max(0, Math.min(100, setState[p.name] ?? prev[p.name] ?? p.default));
-      }
-      return next;
-    });
-
-    setAnswered((prev) => ({ ...prev, [dIdx]: cIdx }));
-  };
-
-  const allDone = decisions.length > 0 && Object.keys(answered).length === decisions.length;
-
-  const [completionFired, setCompletionFired] = useState(false);
-  useEffect(() => {
-    if (allDone && !completionFired && onComplete) {
-      onComplete();
-      setCompletionFired(true);
-    }
-  }, [allDone, completionFired, onComplete]);
-
-  const reset = () => {
-    const initial = Object.fromEntries(parameters.map((p) => [p.name, p.default]));
-    setValues(initial);
-    setCurrentDecision(0);
-    setAnswered({});
-    setCompletionFired(false);
-    setShowIntro(true);
-  };
-
-  if (isCompleted && !allDone) {
-    return (
-      <Card className="border-green-500/20 bg-green-500/[0.04]">
-        <CardContent className="p-6 text-center space-y-3">
-          <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto" />
-          <h3 className="font-bold text-lg">Simulation Complete</h3>
-          <p className="text-sm text-muted-foreground">You've already completed this simulation.</p>
-          <Button variant="outline" onClick={reset}>
-            <RotateCcw className="w-4 h-4 mr-1" /> Replay Simulation
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Repend intro flow
-  if (showIntro && data.repend_intro) {
-    return (
-      <LabIntro
-        title={data.title || "Simulation"}
-        intro={data.repend_intro}
-        labType="simulation"
-        onStart={() => setShowIntro(false)}
-      />
-    );
-  }
-
-  // Legacy intro (fallback if no repend_intro)
-  if (showIntro && !data.repend_intro) {
-    const introText = data.intro || data.description || `In this simulation, you'll make strategic decisions that affect ${parameters.map(p => p.name).join(", ")}.`;
-    return (
-      <Card className="border-primary/20 bg-primary/5">
-        <CardContent className="p-5 space-y-4">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🧪</span>
-            <h3 className="font-bold text-lg">{data.title || "Simulation Lab"}</h3>
-          </div>
-          <p className="text-sm leading-relaxed">{introText}</p>
-          <div className="space-y-2">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">You'll be managing</span>
-            <div className="flex flex-wrap gap-2">
-              {parameters.map((p) => (
-                <Badge key={p.name} variant="outline" className="text-xs">
-                  {p.icon} {p.name}
-                </Badge>
-              ))}
-            </div>
-          </div>
-          <Button onClick={() => setShowIntro(false)} className="w-full">
-            Start Simulation <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <div className="space-y-5">
-      {/* DECISIONS */}
-      {decisions.length > 0 && !allDone && currentDecision < decisions.length && (
-        <Card className="border-primary/30 bg-primary/5">
-          <CardContent className="p-5 space-y-4">
-            <div className="flex items-center gap-2">
-              <MessageCircleQuestion className="w-5 h-5 text-primary" />
-              <h3 className="font-bold">
-                Scenario {currentDecision + 1} of {decisions.length}
-              </h3>
-            </div>
-            <p>{decisions[currentDecision].emoji ?? "🔬"} {decisions[currentDecision].question}</p>
-            {decisions[currentDecision].choices.map((c, i) => {
-              const isChosen = answered[currentDecision] === i;
-              const isAnswered = answered[currentDecision] !== undefined;
-              return (
-                <div key={i} className="space-y-1">
-                  <button
-                    onClick={() => handleDecision(currentDecision, i)}
-                    disabled={isAnswered}
-                    className={`w-full text-left px-4 py-3 rounded-lg border text-sm transition ${
-                      isChosen ? "border-primary bg-primary/10" : isAnswered ? "opacity-50 border-border" : "border-border hover:border-primary/40"
-                    }`}
-                  >
-                    {c.text}
-                  </button>
-                  {isChosen && c.explanation && (
-                    <p className="text-xs text-muted-foreground px-4 py-2 bg-muted/50 rounded-md">
-                      ⚡ {c.explanation}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-            {answered[currentDecision] !== undefined && currentDecision < decisions.length - 1 && (
-              <Button size="sm" variant="outline" onClick={() => setCurrentDecision((prev) => prev + 1)}>
-                Next →
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* SLIDERS */}
-      {parameters.map((p) => {
-        const value = values[p.name] ?? p.default;
-        const { color, icon: Icon } = getParamLevel(value, p.min, p.max);
-        return (
-          <Card key={p.name}>
-            <CardContent className="p-4 space-y-3">
-              <div className="flex justify-between items-center">
-                <div className="flex gap-2 items-center">
-                  <span>{p.icon}</span>
-                  <span>{p.name}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Icon className={`w-4 h-4 ${color}`} />
-                  <Badge variant="outline">{value} {p.unit}</Badge>
-                </div>
-              </div>
-              <Slider value={[value]} min={p.min} max={p.max} step={1} disabled className="pointer-events-none" />
-            </CardContent>
-          </Card>
-        );
-      })}
-
-      {/* OUTCOME */}
-      <Card>
-        <CardContent className="p-5">
-          <div className="flex justify-between mb-2">
-            <span className="font-bold">{threshold?.label ?? "Outcome"}</span>
-            <Badge>{totalPercent}%</Badge>
-          </div>
-          <div className="h-2 bg-secondary rounded-full overflow-hidden">
-            <div className="h-full bg-primary transition-all" style={{ width: `${totalPercent}%` }} />
-          </div>
-          <p className="text-sm text-muted-foreground mt-2">{threshold?.message}</p>
-        </CardContent>
-      </Card>
-
-      {/* Key Insight */}
-      {allDone && data.key_insight && (
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="p-5 space-y-2">
-            <div className="flex items-center gap-2">
-              <Lightbulb className="w-5 h-5 text-primary" />
-              <h3 className="font-bold">✅ Key Insight</h3>
-            </div>
-            <p className="text-sm leading-relaxed">{data.key_insight}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Reset button */}
-      {allDone && (
-        <Button variant="outline" onClick={reset}>
-          <RotateCcw className="w-4 h-4 mr-1" /> Replay Simulation
-        </Button>
-      )}
-    </div>
-  );
-}
-
-/* ================= EMPTY STATE ================= */
 
 function LabEmptyState({ labType }: { labType?: string | null }) {
   return (
@@ -334,67 +22,190 @@ function LabEmptyState({ labType }: { labType?: string | null }) {
         <div className="text-4xl">🔬</div>
         <h3 className="font-bold text-lg">Lab Data Unavailable</h3>
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
-          The {labType || "simulation"} lab for this module wasn't generated properly.
-          Try regenerating the course to get interactive labs.
+          The lab for this module wasn't generated properly. Try regenerating the course to get interactive labs.
         </p>
       </CardContent>
     </Card>
   );
 }
 
-/* ================= MAIN ROUTER ================= */
+function LabPendingState() {
+  return (
+    <Card className="border-primary/20 bg-primary/5">
+      <CardContent className="p-8 text-center space-y-3">
+        <Loader2 className="w-10 h-10 text-primary animate-spin mx-auto" />
+        <h3 className="font-bold text-lg">Generating Lab...</h3>
+        <p className="text-sm text-muted-foreground max-w-md mx-auto">
+          The AI is designing a unique interactive lab for this module. This may take a moment.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
 
-export default function InteractiveLab({ labType, labData, labTitle, labDescription, onComplete, isCompleted }: Props) {
+function LabFailedState({ error, onRetry }: { error?: string | null; onRetry?: () => void }) {
+  return (
+    <Card className="border-destructive/20 bg-destructive/5">
+      <CardContent className="p-8 text-center space-y-3">
+        <AlertTriangle className="w-10 h-10 text-destructive mx-auto" />
+        <h3 className="font-bold text-lg">Lab Generation Failed</h3>
+        <p className="text-sm text-muted-foreground max-w-md mx-auto">
+          {error || "The AI couldn't generate a lab for this module. You can try regenerating it."}
+        </p>
+        {onRetry && (
+          <Button variant="outline" onClick={onRetry}>
+            <RefreshCw className="w-4 h-4 mr-1" /> Retry Generation
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function InteractiveLab({ labType, labData, labTitle, labDescription, labGenerationStatus, labError, onComplete, isCompleted, onRetryGeneration }: Props) {
+  // Handle generation status states
+  if (labGenerationStatus === "pending" || labGenerationStatus === "generating") {
+    return <LabPendingState />;
+  }
+  if (labGenerationStatus === "failed") {
+    return <LabFailedState error={labError} onRetry={onRetryGeneration} />;
+  }
+
+  // No data at all
   if (!labData || (typeof labData === "object" && Object.keys(labData).length === 0)) {
     return <LabEmptyState labType={labType} />;
   }
 
-  // Classification
-  if (labType === "classification") {
-    const hasData = labData?.items?.length > 0 && labData?.categories?.length > 0;
-    if (!hasData) return <LabEmptyState labType={labType} />;
-    return <ClassificationLab data={labData} onComplete={onComplete} isCompleted={isCompleted} />;
+  // Check for empty marker from old system
+  if (labData.empty === true) {
+    return <LabEmptyState labType={labType} />;
   }
 
-  // Policy Optimization
-  if (labType === "policy_optimization") {
-    const hasData = labData?.parameters?.length > 0 && labData?.constraints?.length > 0;
-    if (!hasData) return <LabEmptyState labType={labType} />;
-    return <PolicyOptimizationLab data={labData} onComplete={onComplete} isCompleted={isCompleted} />;
-  }
+  // Everything goes through DynamicLab — it handles all block types
+  // Legacy labs with parameters/decisions/tasks will also work since DynamicLab
+  // checks for blocks array AND falls back to old-style rendering
+  const hasBlocks = Array.isArray(labData.blocks) && labData.blocks.length > 0;
+  const hasLegacyContent = labData.parameters?.length > 0 || labData.decisions?.length > 0 || labData.tasks?.length > 0 
+    || labData.categories?.length > 0 || labData.dimensions?.length > 0 || labData.decision_challenge;
 
-  // Ethical Dilemma
-  if (labType === "ethical_dilemma") {
-    const hasData = labData?.dimensions?.length > 0 && labData?.decisions?.length > 0;
-    if (!hasData) return <LabEmptyState labType={labType} />;
-    return <EthicalDilemmaLab data={labData} onComplete={onComplete} isCompleted={isCompleted} />;
-  }
-
-  // Decision Lab
-  if (labType === "decision_lab") {
-    const hasData = labData?.scenario && labData?.decision_challenge;
-    if (!hasData) return <LabEmptyState labType={labType} />;
-    return <DecisionLab data={labData} onComplete={onComplete} isCompleted={isCompleted} />;
-  }
-
-  // Math Lab
-  if (labType === "math_lab") {
-    const hasData = labData?.tasks?.length > 0 && labData?.visual_type;
-    if (!hasData) return <LabEmptyState labType={labType} />;
-    return <MathLab data={labData} onComplete={onComplete} isCompleted={isCompleted} />;
-  }
-
-  // Default: Try Simulation first, then DynamicLab as catch-all
-  const hasSimulationData = labData?.parameters?.length > 0;
-  if (hasSimulationData) {
-    return <SimulationLabInline data={labData} onComplete={onComplete} isCompleted={isCompleted} />;
-  }
-
-  // Catch-all: DynamicLab renders any AI-generated structure
-  const hasAnyContent = labData && typeof labData === "object" && Object.keys(labData).length > 1;
-  if (hasAnyContent) {
-    return <DynamicLab data={labData} onComplete={onComplete} isCompleted={isCompleted} />;
+  if (hasBlocks || hasLegacyContent) {
+    // If legacy data without blocks, convert to blocks format
+    const normalizedData = hasBlocks ? labData : convertLegacyToBlocks(labData);
+    return <DynamicLab data={normalizedData} onComplete={onComplete} isCompleted={isCompleted} />;
   }
 
   return <LabEmptyState labType={labType} />;
+}
+
+/** Convert old-style lab data into the new blocks format for DynamicLab */
+function convertLegacyToBlocks(data: any): any {
+  const blocks: any[] = [];
+  const variables: any[] = [];
+
+  // Convert parameters to variables
+  if (Array.isArray(data.parameters)) {
+    for (const p of data.parameters) {
+      variables.push({
+        name: p.name || "Variable",
+        icon: p.icon || "📊",
+        unit: p.unit || "%",
+        min: p.min ?? 0,
+        max: p.max ?? 100,
+        default: p.default ?? 50,
+        description: p.description || "",
+      });
+    }
+  }
+
+  // Convert dimensions to variables (ethical dilemma)
+  if (Array.isArray(data.dimensions)) {
+    for (const d of data.dimensions) {
+      variables.push({
+        name: d.name || "Dimension",
+        icon: d.icon || "⚖️",
+        unit: "%",
+        min: 0,
+        max: 100,
+        default: d.default ?? 50,
+        description: d.description || "",
+      });
+    }
+  }
+
+  // Convert decisions to choice_set blocks
+  if (Array.isArray(data.decisions)) {
+    for (const d of data.decisions) {
+      blocks.push({
+        type: "choice_set",
+        question: d.question || d.prompt || "What do you decide?",
+        emoji: d.emoji || "🔬",
+        choices: (d.choices || []).map((c: any) => ({
+          text: c.text || c.label || "Choice",
+          feedback: c.explanation || c.consequence || c.feedback || "",
+          effects: c.set_state || c.effects || c.impacts || {},
+          is_best: c.is_best || false,
+        })),
+      });
+    }
+  }
+
+  // Convert decision_challenge (decision lab format)
+  if (data.decision_challenge) {
+    blocks.push({
+      type: "choice_set",
+      question: data.decision_challenge.question || data.scenario || "What would you do?",
+      emoji: "🎯",
+      choices: (data.decision_challenge.options || []).map((o: any) => ({
+        text: o.text || o.label || "Option",
+        feedback: o.consequence || o.result || "",
+        effects: {},
+        is_best: o.is_best || false,
+      })),
+    });
+  }
+
+  // Convert categories/items (classification)
+  if (Array.isArray(data.categories) && Array.isArray(data.items)) {
+    // Add as tasks
+    blocks.push({
+      type: "step_task",
+      tasks: data.items.map((item: any, i: number) => ({
+        id: `classify_${i}`,
+        prompt: `Classify: ${item.content || item.name || "Item"}`,
+        type: "choice",
+        options: data.categories.map((c: any) => typeof c === "string" ? c : c.name),
+        correct_answer: item.correctCategory || item.correct_category || "",
+        explanation: item.explanation || "",
+      })),
+    });
+  }
+
+  // Convert standalone tasks
+  if (Array.isArray(data.tasks) && !data.categories) {
+    blocks.push({
+      type: "step_task",
+      tasks: data.tasks.map((t: any, i: number) => ({
+        id: t.id || `t${i + 1}`,
+        prompt: t.description || t.question || t.prompt || "Task",
+        type: t.type || "input",
+        correct_answer: t.correct_answer || t.answer || "",
+        options: t.options || undefined,
+        hint: t.hint || undefined,
+        explanation: t.explanation || undefined,
+      })),
+    });
+  }
+
+  // Add key insight
+  if (data.key_insight) {
+    blocks.push({ type: "insight", content: data.key_insight });
+  }
+
+  return {
+    ...data,
+    variables,
+    blocks,
+    kind: data.lab_type || "legacy",
+    completion_rule: "all_choices",
+  };
 }
