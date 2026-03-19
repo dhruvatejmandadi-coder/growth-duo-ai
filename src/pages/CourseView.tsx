@@ -39,6 +39,8 @@ type Module = {
   lab_description: string | null;
   lab_type: string | null;
   lab_data: any;
+  lab_generation_status: string | null;
+  lab_error: string | null;
   quiz: any[];
   completed: boolean;
 };
@@ -266,6 +268,8 @@ export default function CourseView() {
                   labData={mod.lab_data}
                   labTitle={mod.lab_title}
                   labDescription={mod.lab_description}
+                  labGenerationStatus={mod.lab_generation_status}
+                  labError={mod.lab_error}
                   onComplete={handleLabComplete}
                   isCompleted={getSectionDone(mod.id, "lab")}
                 />

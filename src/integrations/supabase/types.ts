@@ -277,8 +277,11 @@ export type Database = {
           course_id: string
           created_at: string
           id: string
+          lab_blueprint: Json | null
           lab_data: Json | null
           lab_description: string | null
+          lab_error: string | null
+          lab_generation_status: string
           lab_title: string | null
           lab_type: string | null
           lesson_content: string
@@ -293,8 +296,11 @@ export type Database = {
           course_id: string
           created_at?: string
           id?: string
+          lab_blueprint?: Json | null
           lab_data?: Json | null
           lab_description?: string | null
+          lab_error?: string | null
+          lab_generation_status?: string
           lab_title?: string | null
           lab_type?: string | null
           lesson_content: string
@@ -309,8 +315,11 @@ export type Database = {
           course_id?: string
           created_at?: string
           id?: string
+          lab_blueprint?: Json | null
           lab_data?: Json | null
           lab_description?: string | null
+          lab_error?: string | null
+          lab_generation_status?: string
           lab_title?: string | null
           lab_type?: string | null
           lesson_content?: string
