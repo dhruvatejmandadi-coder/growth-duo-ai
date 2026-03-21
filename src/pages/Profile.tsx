@@ -5,12 +5,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/hooks/useTheme";
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { usePoints } from "@/hooks/usePoints";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Mail, Trophy, Flame, Award, Save, Loader2, Camera } from "lucide-react";
+import { User, Mail, Trophy, Flame, Award, Save, Loader2, Camera, Sun, Moon } from "lucide-react";
 import CertificateCard from "@/components/courses/CertificateCard";
+import { Switch } from "@/components/ui/switch";
+import { Label as UiLabel } from "@/components/ui/label";
 
 const PROFILE_KEY = "repend_profile";
 
@@ -32,6 +35,7 @@ interface CertificateRow {
 
 export default function Profile() {
   const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const { totalPoints, streak, achievements } = usePoints();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -231,6 +235,28 @@ export default function Profile() {
                 ))}
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Appearance */}
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              {theme === "dark" ? <Moon className="w-5 h-5 text-primary" /> : <Sun className="w-5 h-5 text-primary" />}
+              Appearance
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Sun className="w-4 h-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">Dark Mode</p>
+                  <p className="text-xs text-muted-foreground">Switch between light and dark themes</p>
+                </div>
+              </div>
+              <Switch checked={theme === "dark"} onCheckedChange={toggleTheme} />
+            </div>
           </CardContent>
         </Card>
 
