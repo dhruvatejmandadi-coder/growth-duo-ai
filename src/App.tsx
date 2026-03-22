@@ -25,6 +25,7 @@ import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/AdminDashboard";
 import CourseCreator from "./pages/CourseCreator";
 import PublicCourses from "./pages/PublicCourses";
+import CourseEditor from "./pages/CourseEditor";
 
 const queryClient = new QueryClient();
 
