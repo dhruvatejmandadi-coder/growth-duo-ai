@@ -231,20 +231,41 @@ You design the lab from scratch based on what interaction best teaches this conc
 
     const userPrompt = `Design a lab blueprint for: "${moduleTitle}"\n\nTopic: ${topic}\nLab concept: ${labConcept}\n\nYou MUST return at least 3 blocks mixing different types. Every choice_set must set ALL variables.`;
 
-    let aiData = await callAI(LOVABLE_API_KEY, {
-      model: "google/gemini-2.5-pro",
-      temperature: 0.7,
-      max_tokens: 8192,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      tools: [blueprintToolSchema],
-      tool_choice: { type: "function", function: { name: "create_lab_blueprint" } },
-    });
+    let blueprint: any = null;
+    let lastGenError = "";
 
-    let result = extractToolArgs(aiData);
-    let blueprint = result.blueprint || result;
+    for (let genAttempt = 0; genAttempt < 3; genAttempt++) {
+      if (genAttempt > 0) {
+        console.log(`Retry attempt ${genAttempt} for "${moduleTitle}"...`);
+        await new Promise(r => setTimeout(r, genAttempt * 2000));
+      }
+      try {
+        const prompt = genAttempt === 0 ? userPrompt :
+          `You MUST generate a lab blueprint with AT LEAST 3 blocks for: "${moduleTitle}" (${topic}).
+Return: 1 text block, 2 choice_set blocks with 3 choices each, 1 step_task block, 1 insight block.
+Variables must be domain-specific. Create at least 3 variables.`;
+
+        const aiData = await callAI(LOVABLE_API_KEY, {
+          model: "google/gemini-2.5-flash",
+          temperature: genAttempt === 0 ? 0.7 : 0.5,
+          max_tokens: 8192,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt },
+          ],
+          tools: [blueprintToolSchema],
+          tool_choice: { type: "function", function: { name: "create_lab_blueprint" } },
+        });
+
+        const result = extractToolArgs(aiData);
+        blueprint = result.blueprint || result;
+        if (blueprint && typeof blueprint === "object") break;
+      } catch (e: any) {
+        lastGenError = e.message || "Unknown generation error";
+        console.warn(`Gen attempt ${genAttempt} failed: ${lastGenError}`);
+        if (e.message?.includes("credits")) throw e;
+      }
+    }
 
     if (!blueprint || typeof blueprint !== "object") {
       await supabase.from("course_modules").update({ lab_generation_status: "failed", lab_error: "AI returned empty blueprint" }).eq("id", moduleId);
