@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useCourseProgress } from "@/hooks/useCourseProgress";
+import { useSubscription } from "@/hooks/useSubscription";
 import InteractiveLab from "@/components/labs/InteractiveLab";
 import LessonSlides from "@/components/courses/LessonSlides";
 import QuizSlides from "@/components/courses/QuizSlides";
