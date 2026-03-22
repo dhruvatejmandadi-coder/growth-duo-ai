@@ -386,35 +386,55 @@ export type Database = {
           description: string | null
           id: string
           is_public: boolean
+          is_published: boolean
+          parent_course_id: string | null
+          published_by: string | null
           status: string
           title: string
           topic: string
           updated_at: string
           user_id: string
+          version: number
         }
         Insert: {
           created_at?: string
           description?: string | null
           id?: string
           is_public?: boolean
+          is_published?: boolean
+          parent_course_id?: string | null
+          published_by?: string | null
           status?: string
           title: string
           topic: string
           updated_at?: string
           user_id: string
+          version?: number
         }
         Update: {
           created_at?: string
           description?: string | null
           id?: string
           is_public?: boolean
+          is_published?: boolean
+          parent_course_id?: string | null
+          published_by?: string | null
           status?: string
           title?: string
           topic?: string
           updated_at?: string
           user_id?: string
+          version?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "courses_parent_course_id_fkey"
+            columns: ["parent_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lab_results: {
         Row: {

@@ -25,6 +25,7 @@ import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/AdminDashboard";
 import CourseCreator from "./pages/CourseCreator";
 import PublicCourses from "./pages/PublicCourses";
+import CourseEditor from "./pages/CourseEditor";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
               <Route path="/courses/create" element={<CourseCreator />} />
               <Route path="/courses/explore" element={<PublicCourses />} />
               <Route path="/courses/:id" element={<CourseView />} />
+              <Route path="/courses/:id/edit" element={<CourseEditor />} />
               <Route path="/community" element={<Community />} />
               <Route path="/challenges" element={<Challenges />} />
               <Route path="/challenges/create" element={<CreateChallenge />} />

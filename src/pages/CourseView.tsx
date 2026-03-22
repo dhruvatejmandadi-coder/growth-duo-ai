@@ -15,6 +15,9 @@ import {
   FileText,
   Beaker,
   ClipboardList,
+  Pencil,
+  Crown,
+  User,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -22,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useCourseProgress } from "@/hooks/useCourseProgress";
+import { useSubscription } from "@/hooks/useSubscription";
 import InteractiveLab from "@/components/labs/InteractiveLab";
 import LessonSlides from "@/components/courses/LessonSlides";
 import QuizSlides from "@/components/courses/QuizSlides";
@@ -49,6 +53,9 @@ type Course = {
   id: string;
   title: string;
   description: string | null;
+  is_published?: boolean;
+  published_by?: string | null;
+  user_id?: string;
 };
 
 type ContentType = "lesson" | "lab" | "quiz";
@@ -61,6 +68,7 @@ export default function CourseView() {
   const { toast } = useToast();
   const { user } = useAuth();
   const { progress, completeSection, uncompleteSection, justCompleted, dismissCompletion } = useCourseProgress(id);
+  const { isElite } = useSubscription();
 
   const [course, setCourse] = useState<Course | null>(null);
   const [modules, setModules] = useState<Module[]>([]);
@@ -214,7 +222,19 @@ export default function CourseView() {
             <Button variant="ghost" size="sm" onClick={() => navigate("/courses")} className="-ml-2 mb-2 text-muted-foreground text-[13px]">
               <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Back
             </Button>
-            <h2 className="font-display font-semibold text-sm line-clamp-2">{course?.title}</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-display font-semibold text-sm line-clamp-2">{course?.title}</h2>
+              {isElite && course?.user_id === user?.id && (
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary shrink-0" onClick={() => navigate(`/courses/${id}/edit`)} title="Edit Course (Elite)">
+                  <Pencil className="w-3.5 h-3.5" />
+                </Button>
+              )}
+            </div>
+            {course?.is_published && (
+              <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground">
+                <User className="w-2.5 h-2.5" /> Published
+              </div>
+            )}
             <div className="flex items-center gap-2 mt-3">
               <div className="flex-1 h-1 bg-secondary rounded-full overflow-hidden">
                 <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
