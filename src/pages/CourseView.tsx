@@ -68,6 +68,7 @@ export default function CourseView() {
   const { toast } = useToast();
   const { user } = useAuth();
   const { progress, completeSection, uncompleteSection, justCompleted, dismissCompletion } = useCourseProgress(id);
+  const { isElite } = useSubscription();
 
   const [course, setCourse] = useState<Course | null>(null);
   const [modules, setModules] = useState<Module[]>([]);
