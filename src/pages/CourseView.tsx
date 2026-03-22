@@ -53,6 +53,9 @@ type Course = {
   id: string;
   title: string;
   description: string | null;
+  is_published?: boolean;
+  published_by?: string | null;
+  user_id?: string;
 };
 
 type ContentType = "lesson" | "lab" | "quiz";
