@@ -57,12 +57,10 @@ function detectChallenge(body: string): { isChallenge: boolean; questionText: st
   return { isChallenge, questionText: body, answerHint };
 }
 
-// Replace $...$ math notation with parentheses for cleaner display
+// Clean up double-escaped LaTeX that AI sometimes produces
 function cleanMathNotation(text: string): string {
-  // Replace $$...$$  (display math) with [ ... ]
-  let result = text.replace(/\$\$(.+?)\$\$/g, '[ $1 ]');
-  // Replace $...$ (inline math) with ( ... )
-  result = result.replace(/\$(.+?)\$/g, '( $1 )');
+  let result = text.replace(/\\\\\(/g, '$').replace(/\\\\\)/g, '$');
+  result = result.replace(/\\\\\[/g, '$$').replace(/\\\\\]/g, '$$');
   return result;
 }
 
