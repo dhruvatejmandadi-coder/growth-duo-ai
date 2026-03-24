@@ -90,7 +90,7 @@ const blueprintToolSchema = {
           items: {
             type: "object",
             properties: {
-              type: { type: "string", enum: ["text", "choice_set", "slider", "table", "step_task", "chart", "insight"] },
+              type: { type: "string", enum: ["text", "choice_set", "slider", "table", "step_task", "chart", "insight", "image", "diagram"] },
               content: { type: "string" },
               question: { type: "string" },
               emoji: { type: "string" },
@@ -108,6 +108,9 @@ const blueprintToolSchema = {
                 },
               },
               variable: { type: "string" },
+              image_prompt: { type: "string", description: "Prompt to generate a visual/diagram for this block. Describe the educational diagram, chart, or illustration needed." },
+              image_caption: { type: "string", description: "Caption explaining what the image shows" },
+              diagram_type: { type: "string", description: "Type of diagram: flowchart, comparison, process, anatomy, graph, model, cycle, hierarchy" },
               prompt: { type: "string" },
               interactive: { type: "boolean" },
               title: { type: "string" },
@@ -224,12 +227,21 @@ Your job: Design a SIMULATION lab where students make decisions and see conseque
 === REQUIRED STRUCTURE ===
 Generate AT LEAST 6 blocks in this order:
 1. text — Set the scene. Describe the scenario and the student's role.
-2. table — Show key data the student needs for decisions.
-3. choice_set — First decision with 3-4 options. Each has different tradeoffs affecting ALL variables.
-4. choice_set — Second decision building on the first. New tradeoffs.
-5. step_task — 1-2 calculation or analysis tasks related to the scenario.
-6. choice_set — Final decision with highest stakes.
-7. insight — Key takeaway connecting decisions to real-world outcomes.
+2. image or diagram — A visual showing the system, scenario, or key concept. Provide image_prompt describing the educational diagram needed.
+3. table — Show key data the student needs for decisions.
+4. choice_set — First decision with 3-4 options. Each has different tradeoffs affecting ALL variables.
+5. choice_set — Second decision building on the first. New tradeoffs.
+6. step_task — 1-2 calculation or analysis tasks related to the scenario.
+7. image — Another visual showing outcomes, comparisons, or processes. Provide image_prompt.
+8. choice_set — Final decision with highest stakes.
+9. insight — Key takeaway connecting decisions to real-world outcomes.
+
+=== IMAGE BLOCKS ===
+- Use type "image" or "diagram" for visual blocks
+- image_prompt must describe a clear educational diagram (e.g. "labeled diagram of an exothermic reaction showing energy levels, reactants, products, and activation energy barrier")
+- image_caption explains what the student should notice
+- diagram_type categorizes the visual: flowchart, comparison, process, anatomy, graph, model, cycle, hierarchy
+- Include at least 1-2 visual blocks per lab
 
 === RULES ===
 - Variables must be DOMAIN-SPECIFIC to ${topic}. Never generic names.
