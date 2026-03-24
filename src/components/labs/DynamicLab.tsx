@@ -133,6 +133,8 @@ export default function DynamicLab({ data, onComplete, isCompleted }: Props) {
       case "table":
       case "chart":
       case "insight":
+      case "image":
+      case "diagram":
         return true;
       default: return true;
     }
