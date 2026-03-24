@@ -71,7 +71,7 @@ export default function QuizSlides({ questions, onSubmit, isCompleted, initialAn
       <CardContent className="p-6">
         {!isResults ? (
           <>
-            {/* Question slide */}
+            {/* Question slide — NO immediate feedback, just selection */}
             <div className="mb-4 flex items-center justify-between">
               <Badge variant="outline" className="text-xs font-medium bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30">
                 Question {current + 1} of {total}
@@ -92,6 +92,9 @@ export default function QuizSlides({ questions, onSubmit, isCompleted, initialAn
                 {questions[current]?.options?.map((opt, oi) => {
                   const selected = answers[current] === oi;
                   const isCorrect = oi === questions[current].correct;
+
+                  // Before submit: just show selected state
+                  // After submit: show correct/incorrect
                   let style = "border-border/50 hover:border-primary/30 hover:bg-primary/[0.03]";
 
                   if (submitted) {
@@ -126,6 +129,7 @@ export default function QuizSlides({ questions, onSubmit, isCompleted, initialAn
                 })}
               </div>
 
+              {/* Show explanation ONLY after submit (review mode) */}
               {submitted && questions[current]?.explanation && (
                 <div className="mt-4 p-3 rounded-lg bg-secondary/30 border border-border/30">
                   <p className="text-sm text-muted-foreground">💡 {questions[current].explanation}</p>
