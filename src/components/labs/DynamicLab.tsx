@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import {
   CheckCircle2, ChevronRight, ChevronLeft, RotateCcw, Lightbulb,
-  MessageCircleQuestion, TrendingUp, TrendingDown, Minus
+  MessageCircleQuestion, TrendingUp, TrendingDown, Minus, ImageIcon, Loader2
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import LabIntro from "./LabIntro";
 import type { LabIntroData } from "./LabIntro";
 
