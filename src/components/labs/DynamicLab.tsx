@@ -85,6 +85,8 @@ const BLOCK_LABELS: Record<string, { label: string; emoji: string; color: string
   step_task: { label: "Challenge", emoji: "📋", color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" },
   chart: { label: "Chart", emoji: "📈", color: "bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20" },
   insight: { label: "Key Insight", emoji: "💡", color: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" },
+  image: { label: "Visual", emoji: "🖼️", color: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20" },
+  diagram: { label: "Diagram", emoji: "📐", color: "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20" },
 };
 
 export default function DynamicLab({ data, onComplete, isCompleted }: Props) {
