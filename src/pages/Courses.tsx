@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { GeneratingSignUpPrompt } from "@/components/survey/GeneratingSignUpPrompt";
 import { CourseGeneratingScreen } from "@/components/courses/CourseGeneratingScreen";
 import { useSubscription, PLAN_CONFIG, STARTER_LIMITS } from "@/hooks/useSubscription";
+import PersonalizationModal, { type CoursePreferences } from "@/components/courses/PersonalizationModal";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = ".pdf,.txt,.md,.csv,.png,.jpg,.jpeg,.webp";
@@ -37,6 +38,7 @@ export default function Courses() {
   const [showSignUpPrompt, setShowSignUpPrompt] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [showPersonalization, setShowPersonalization] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -91,7 +93,7 @@ export default function Courses() {
 
   const { plan, getCoursesLimit, getFileUploadsLimit } = useSubscription();
 
-  const handleGenerate = async () => {
+  const handleCreateClick = () => {
     const hasInput = topic.trim() || selectedFile;
     if (!hasInput || isGenerating) return;
 
@@ -101,30 +103,28 @@ export default function Courses() {
       return;
     }
 
-    // Check course generation limits
+    // Check limits before showing personalization
     const coursesLimit = getCoursesLimit();
     if (courses.length >= coursesLimit) {
-      toast({
-        title: "Course limit reached",
-        description: `Your ${plan} plan allows ${coursesLimit} courses/month. Upgrade for more!`,
-        variant: "destructive",
-      });
+      toast({ title: "Course limit reached", description: `Your ${plan} plan allows ${coursesLimit} courses/month. Upgrade for more!`, variant: "destructive" });
       navigate("/pricing");
       return;
     }
 
-    // Check file upload limits
     if (selectedFile && getFileUploadsLimit() === 0) {
-      toast({
-        title: "File uploads not available",
-        description: "Upgrade to Pro or Elite to generate courses from uploaded files.",
-        variant: "destructive",
-      });
+      toast({ title: "File uploads not available", description: "Upgrade to Pro or Elite to generate courses from uploaded files.", variant: "destructive" });
       navigate("/pricing");
       return;
     }
 
+    // Show personalization step
+    setShowPersonalization(true);
+  };
+
+  const handlePersonalizationSubmit = async (prefs: CoursePreferences) => {
+    setShowPersonalization(false);
     setIsGenerating(true);
+
     try {
       let filePath: string | null = null;
       if (selectedFile) {
@@ -132,7 +132,10 @@ export default function Courses() {
         if (!filePath) { setIsGenerating(false); return; }
       }
 
-      const body: Record<string, string> = { topic: topic.trim() || selectedFile?.name?.replace(/\.[^/.]+$/, "") || "Uploaded Document" };
+      const body: Record<string, any> = {
+        topic: topic.trim() || selectedFile?.name?.replace(/\.[^/.]+$/, "") || "Uploaded Document",
+        preferences: prefs,
+      };
       if (filePath) body.filePath = filePath;
 
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-course`, {
@@ -223,13 +226,13 @@ export default function Courses() {
                 placeholder="e.g. React Hooks, Machine Learning, Guitar..."
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
+                onKeyDown={(e) => e.key === "Enter" && handleCreateClick()}
                 disabled={isGenerating}
                 className="flex-1"
               />
             </div>
 
-            <Button variant="hero" onClick={handleGenerate} disabled={(!topic.trim() && !selectedFile) || isGenerating}>
+            <Button variant="hero" onClick={handleCreateClick} disabled={(!topic.trim() && !selectedFile) || isGenerating}>
               {isGenerating ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -345,6 +348,14 @@ export default function Courses() {
           </>
         )}
       </div>
+
+      {/* Personalization modal */}
+      <PersonalizationModal
+        open={showPersonalization}
+        onClose={() => setShowPersonalization(false)}
+        onSubmit={handlePersonalizationSubmit}
+        topic={topic || selectedFile?.name || ""}
+      />
 
       {/* Course generation loading screen */}
       <CourseGeneratingScreen topic={topic || selectedFile?.name || ""} isVisible={isGenerating && !!user} />

@@ -37,9 +37,7 @@ async function callAI(apiKey: string, body: any, retries = 2): Promise<any> {
 
 function extractToolArgs(aiData: any): any {
   const finishReason = aiData.choices?.[0]?.finish_reason;
-  if (finishReason === "error") {
-    throw new Error("MODEL_ERROR");
-  }
+  if (finishReason === "error") throw new Error("MODEL_ERROR");
   const message = aiData.choices[0].message;
   const toolCall = message?.tool_calls?.[0];
   if (!toolCall) {
@@ -66,9 +64,10 @@ const blueprintToolSchema = {
       type: "object",
       properties: {
         title: { type: "string" },
-        kind: { type: "string" },
-        scenario: { type: "string" },
+        kind: { type: "string", description: "Unique descriptive kind like 'ecosystem_balance', 'reaction_optimizer'" },
+        scenario: { type: "string", description: "2-3 sentence real-world scenario" },
         learning_goal: { type: "string" },
+        key_insight: { type: "string", description: "The main takeaway from this lab" },
         variables: {
           type: "array",
           items: {
@@ -87,6 +86,7 @@ const blueprintToolSchema = {
         },
         blocks: {
           type: "array",
+          description: "Ordered UI blocks. MUST include at least 5 blocks mixing types.",
           items: {
             type: "object",
             properties: {
@@ -100,8 +100,8 @@ const blueprintToolSchema = {
                   type: "object",
                   properties: {
                     text: { type: "string" },
-                    feedback: { type: "string" },
-                    effects: { type: "object" },
+                    feedback: { type: "string", description: "Explain what happens when this choice is made. Describe consequences, NOT just correct/incorrect." },
+                    effects: { type: "object", description: "Maps variable name to new value" },
                     is_best: { type: "boolean" },
                   },
                   required: ["text", "feedback", "effects"],
@@ -179,7 +179,6 @@ serve(async (req) => {
     const { moduleId } = await req.json();
     if (!moduleId) throw new Error("moduleId is required");
 
-    // Fetch module
     const { data: mod, error: modError } = await supabase
       .from("course_modules")
       .select("id, title, lab_description, lab_generation_status, course_id")
@@ -188,7 +187,6 @@ serve(async (req) => {
 
     if (modError || !mod) throw new Error("Module not found");
 
-    // Verify user owns the course
     const { data: course } = await supabase
       .from("courses")
       .select("id, topic, user_id")
@@ -197,14 +195,12 @@ serve(async (req) => {
 
     if (!course) throw new Error("Course not found");
 
-    // Skip if already done
     if (mod.lab_generation_status === "done") {
       return new Response(JSON.stringify({ status: "already_done" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Mark as generating
     await supabase.from("course_modules").update({ lab_generation_status: "generating" }).eq("id", moduleId);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -214,22 +210,45 @@ serve(async (req) => {
     const moduleTitle = mod.title;
     const labConcept = mod.lab_description || mod.title;
 
-    const systemPrompt = `You are a lab designer for Repend, a decision-based interactive learning platform.
+    const systemPrompt = `You are a SIMULATION DESIGNER for Repend, a decision-based interactive learning platform.
 
-Your job: Design a UNIQUE interactive lab blueprint for a specific concept. You are NOT constrained to any template.
-You design the lab from scratch based on what interaction best teaches this concept.
+Your job: Design a SIMULATION lab where students make decisions and see consequences. NOT a quiz.
+
+=== SIMULATION DESIGN PRINCIPLES ===
+1. Labs are SIMULATIONS, not quizzes. Students make decisions that change system variables.
+2. Every choice_set must present a TRADEOFF — no option should be obviously best.
+3. Feedback should describe CONSEQUENCES ("This increases X but decreases Y"), NOT "Correct/Incorrect".
+4. Variables should change based on decisions, creating a cause-effect chain.
+5. The student plays a ROLE (engineer, doctor, economist, researcher, etc.)
+
+=== REQUIRED STRUCTURE ===
+Generate AT LEAST 6 blocks in this order:
+1. text — Set the scene. Describe the scenario and the student's role.
+2. table — Show key data the student needs for decisions.
+3. choice_set — First decision with 3-4 options. Each has different tradeoffs affecting ALL variables.
+4. choice_set — Second decision building on the first. New tradeoffs.
+5. step_task — 1-2 calculation or analysis tasks related to the scenario.
+6. choice_set — Final decision with highest stakes.
+7. insight — Key takeaway connecting decisions to real-world outcomes.
 
 === RULES ===
-1. Variables must be DOMAIN-SPECIFIC to ${topic}. Never use generic names like "Efficiency", "Quality", "Cost".
-2. Design at least 3 choice_set blocks with real tradeoffs — no choice should improve everything.
-3. Every choice effect must set ALL variables to specific values.
-4. Include at least one step_task with 2-3 tasks.
-5. The lab should feel like a real professional scenario, not a textbook exercise.
-6. Mix block types — don't just use choice_sets. Use tables, charts, text, and step_tasks.
-7. The "kind" field should be unique and descriptive.
-8. Be creative! Each lab should feel different.`;
+- Variables must be DOMAIN-SPECIFIC to ${topic}. Never generic names.
+- Create 3-5 variables that interact with each other.
+- Each choice must set ALL variables to new values. No choice improves everything.
+- Feedback must explain WHY this happens, not just whether it's right.
+- step_task prompts must be clear questions with definite answers.
+- Include hints and explanations for step_tasks.
+- The lab should take 5-10 minutes to complete.`;
 
-    const userPrompt = `Design a lab blueprint for: "${moduleTitle}"\n\nTopic: ${topic}\nLab concept: ${labConcept}\n\nYou MUST return at least 3 blocks mixing different types. Every choice_set must set ALL variables.`;
+    const userPrompt = `Design a simulation lab for: "${moduleTitle}"
+
+Topic: ${topic}
+Concept: ${labConcept}
+
+The student is placed in a real-world scenario where they must make decisions affecting ${topic}-related variables.
+Each decision creates tradeoffs. The lab must feel like running a real system, not answering test questions.
+
+Return at least 6 blocks with a mix of types. Every choice_set must affect ALL variables differently.`;
 
     let blueprint: any = null;
     let lastGenError = "";
@@ -241,12 +260,21 @@ You design the lab from scratch based on what interaction best teaches this conc
       }
       try {
         const prompt = genAttempt === 0 ? userPrompt :
-          `You MUST generate a lab blueprint with AT LEAST 3 blocks for: "${moduleTitle}" (${topic}).
-Return: 1 text block, 2 choice_set blocks with 3 choices each, 1 step_task block, 1 insight block.
-Variables must be domain-specific. Create at least 3 variables.`;
+          `CRITICAL: You MUST generate a simulation lab with AT LEAST 6 blocks for: "${moduleTitle}" (${topic}).
+
+Return EXACTLY:
+- 1 text block setting the scenario
+- 1 table block with data
+- 3 choice_set blocks with 3-4 choices each. Every choice must have effects setting ALL variables to specific numbers.
+- 1 step_task block with 2 tasks (each with correct_answer, hint, explanation)
+- 1 insight block
+
+Create 3-5 domain-specific variables for ${topic}.
+EVERY choice feedback must describe consequences, NOT say "correct" or "incorrect".
+Do NOT return empty blocks.`;
 
         const aiData = await callAI(LOVABLE_API_KEY, {
-          model: "google/gemini-2.5-flash",
+          model: "google/gemini-2.5-pro",
           temperature: genAttempt === 0 ? 0.7 : 0.5,
           max_tokens: 8192,
           messages: [
@@ -259,7 +287,11 @@ Variables must be domain-specific. Create at least 3 variables.`;
 
         const result = extractToolArgs(aiData);
         blueprint = result.blueprint || result;
-        if (blueprint && typeof blueprint === "object") break;
+        if (blueprint && typeof blueprint === "object" && Array.isArray(blueprint.blocks) && blueprint.blocks.length > 0) break;
+        if (blueprint && typeof blueprint === "object") {
+          // Try to extract blocks from alternative structures
+          if (!Array.isArray(blueprint.blocks)) blueprint.blocks = [];
+        }
       } catch (e: any) {
         lastGenError = e.message || "Unknown generation error";
         console.warn(`Gen attempt ${genAttempt} failed: ${lastGenError}`);
@@ -274,9 +306,10 @@ Variables must be domain-specific. Create at least 3 variables.`;
       });
     }
 
-    // Repair blocks
-    if (!Array.isArray(blueprint.blocks)) {
-      blueprint.blocks = [];
+    // Repair blocks from alternative structures
+    if (!Array.isArray(blueprint.blocks)) blueprint.blocks = [];
+
+    if (blueprint.blocks.length === 0) {
       if (Array.isArray(blueprint.decisions)) {
         for (const d of blueprint.decisions) {
           blueprint.blocks.push({
@@ -302,6 +335,7 @@ Variables must be domain-specific. Create at least 3 variables.`;
             correct_answer: t.correct_answer || t.answer || "",
             ...(t.options ? { options: t.options } : {}),
             ...(t.hint ? { hint: t.hint } : {}),
+            ...(t.explanation ? { explanation: t.explanation } : {}),
           })),
         });
       }
@@ -310,7 +344,7 @@ Variables must be domain-specific. Create at least 3 variables.`;
     if (blueprint.blocks.length === 0) {
       await supabase.from("course_modules").update({
         lab_generation_status: "failed",
-        lab_error: "Blueprint generation produced no blocks after 2 attempts",
+        lab_error: "Blueprint generation produced no blocks after 3 attempts",
       }).eq("id", moduleId);
       return new Response(JSON.stringify({ status: "failed", error: "No blocks" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -333,7 +367,6 @@ Variables must be domain-specific. Create at least 3 variables.`;
       }
     }
 
-    // Clamp variable defaults
     for (const v of blueprint.variables) {
       v.min = typeof v.min === "number" ? v.min : 0;
       v.max = typeof v.max === "number" ? v.max : 100;
@@ -373,7 +406,7 @@ Variables must be domain-specific. Create at least 3 variables.`;
       lab_error: null,
     }).eq("id", moduleId);
 
-    console.log(`Lab generated for "${moduleTitle}" → kind: ${blueprint.kind}, blocks: ${blueprint.blocks.length}, vars: ${blueprint.variables.length}`);
+    console.log(`Lab generated for "${moduleTitle}" -> kind: ${blueprint.kind}, blocks: ${blueprint.blocks.length}, vars: ${blueprint.variables.length}`);
 
     return new Response(JSON.stringify({ status: "done", blueprint }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

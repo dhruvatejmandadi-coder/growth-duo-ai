@@ -20,44 +20,28 @@ interface LessonSlidesProps {
 }
 
 const SLIDE_TYPE_CONFIG: Record<string, { label: string; className: string }> = {
-  concept: { label: "Concept", className: "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30" },
-  example: { label: "Example", className: "bg-green-500/15 text-green-700 dark:text-green-300 border-green-500/30" },
-  case_study: { label: "Case Study", className: "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30" },
-  comparison: { label: "Comparison", className: "bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-500/30" },
-  quick_think: { label: "Quick Think", className: "bg-yellow-500/15 text-yellow-700 dark:text-yellow-300 border-yellow-500/30" },
-  myth_vs_reality: { label: "Myth vs Reality", className: "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30" },
-  process: { label: "Process", className: "bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/30" },
-  interactive_predict: { label: "Predict", className: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30" },
-  key_takeaways: { label: "Key Takeaways", className: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30" },
-  challenge: { label: "Challenge", className: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30" },
+  concept: { label: "🧠 Concept", className: "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30" },
+  example: { label: "📊 Example", className: "bg-green-500/15 text-green-700 dark:text-green-300 border-green-500/30" },
+  case_study: { label: "📋 Case Study", className: "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30" },
+  comparison: { label: "⚖️ Comparison", className: "bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-500/30" },
+  quick_think: { label: "🤔 Quick Think", className: "bg-yellow-500/15 text-yellow-700 dark:text-yellow-300 border-yellow-500/30" },
+  myth_vs_reality: { label: "🔍 Myth vs Reality", className: "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30" },
+  process: { label: "⚙️ Process", className: "bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/30" },
+  interactive_predict: { label: "🎯 Predict", className: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30" },
+  key_takeaways: { label: "✅ Key Takeaways", className: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30" },
+  challenge: { label: "📋 Challenge", className: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30" },
+  objective: { label: "🎯 Objective", className: "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30" },
+  real_world: { label: "🌎 Real World", className: "bg-green-500/15 text-green-700 dark:text-green-300 border-green-500/30" },
 };
 
-// Detect if a slide body contains a challenge/question that needs an answer
 function detectChallenge(body: string): { isChallenge: boolean; questionText: string; answerHint: string | null } {
-  const challengePatterns = [
-    /challenge/i,
-    /calculate/i,
-    /how many/i,
-    /how much/i,
-    /what is/i,
-    /find the/i,
-    /solve/i,
-    /determine/i,
-    /compute/i,
-    /🧠.*challenge/i,
-    /🧩/,
-    /💡.*try/i,
-  ];
+  const challengePatterns = [/challenge/i, /calculate/i, /how many/i, /how much/i, /what is/i, /find the/i, /solve/i, /determine/i, /compute/i, /🧠.*challenge/i, /🧩/, /💡.*try/i];
   const isChallenge = challengePatterns.some((p) => p.test(body));
-
-  // Try to extract a hint from the body (text after "hint:" or in parentheses at the end)
   const hintMatch = body.match(/hint:\s*(.+)/i) || body.match(/\(hint:\s*(.+?)\)/i);
   const answerHint = hintMatch ? hintMatch[1].trim() : null;
-
   return { isChallenge, questionText: body, answerHint };
 }
 
-// Clean up double-escaped LaTeX that AI sometimes produces
 function cleanMathNotation(text: string): string {
   let result = text.replace(/\\\\\(/g, '$').replace(/\\\\\)/g, '$');
   result = result.replace(/\\\\\[/g, '$$').replace(/\\\\\]/g, '$$');
@@ -95,14 +79,10 @@ export default function LessonSlides({ content, youtubeUrl, youtubeTitle, onComp
 
   const goPrev = useCallback(() => setCurrent((c) => Math.max(c - 1, 0)), []);
 
-  useEffect(() => {
-    setVisitedSlides((prev) => new Set(prev).add(current));
-  }, [current]);
+  useEffect(() => { setVisitedSlides((prev) => new Set(prev).add(current)); }, [current]);
 
   useEffect(() => {
-    if (visitedSlides.size >= total && !isCompleted && onComplete) {
-      onComplete();
-    }
+    if (visitedSlides.size >= total && !isCompleted && onComplete) onComplete();
   }, [visitedSlides.size, total, isCompleted, onComplete]);
 
   useEffect(() => {
@@ -125,7 +105,6 @@ export default function LessonSlides({ content, youtubeUrl, youtubeTitle, onComp
   const handleChallengeSubmit = (slideIndex: number) => {
     const answer = (challengeAnswers[slideIndex] || "").trim();
     if (!answer) return;
-    // Mark as submitted — we show "submitted" state since we can't always validate
     setChallengeSubmitted((prev) => new Set(prev).add(slideIndex));
     setChallengeResults((prev) => ({ ...prev, [slideIndex]: "correct" }));
   };
@@ -143,13 +122,15 @@ export default function LessonSlides({ content, youtubeUrl, youtubeTitle, onComp
         <Progress value={progressPercent} className="h-1.5 rounded-none" />
         <CardContent className="p-6">
           <div className="mb-4 flex items-center justify-between">
-            <div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-[10px] font-medium bg-muted/50 text-muted-foreground border-border/50">
+                {current + 1} / {total}
+              </Badge>
               {typeConfig && (
-                <Badge variant="outline" className={`mb-2 text-xs font-medium ${typeConfig.className}`}>
+                <Badge variant="outline" className={`text-xs font-medium ${typeConfig.className}`}>
                   {typeConfig.label}
                 </Badge>
               )}
-              {title && <h2 className="font-display text-xl font-bold text-foreground">{title}</h2>}
             </div>
             {isCompleted && (
               <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
@@ -158,9 +139,14 @@ export default function LessonSlides({ content, youtubeUrl, youtubeTitle, onComp
             )}
           </div>
 
+          {/* Slide title */}
+          {title && (
+            <h2 className="font-display text-xl font-bold text-foreground mb-4">{title}</h2>
+          )}
+
           <div
             key={current}
-            className="prose prose-base dark:prose-invert max-w-none text-foreground prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-code:text-accent prose-code:bg-secondary prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-pre:bg-secondary prose-pre:border prose-pre:border-border prose-li:text-foreground prose-img:rounded-lg prose-img:shadow-md prose-img:mx-auto prose-img:max-h-[400px] prose-table:border-collapse prose-th:bg-muted/50 prose-th:border prose-th:border-border prose-th:px-3 prose-th:py-2 prose-th:text-left prose-th:text-sm prose-th:font-semibold prose-td:border prose-td:border-border prose-td:px-3 prose-td:py-2 prose-td:text-sm min-h-[200px] animate-fade-in"
+            className="prose prose-base dark:prose-invert max-w-none text-foreground prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-code:text-accent prose-code:bg-secondary prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-pre:bg-secondary prose-pre:border prose-pre:border-border prose-li:text-foreground prose-img:rounded-lg prose-img:shadow-md prose-img:mx-auto prose-img:max-h-[400px] prose-table:border-collapse prose-th:bg-muted/50 prose-th:border prose-th:border-border prose-th:px-4 prose-th:py-2.5 prose-th:text-left prose-th:text-sm prose-th:font-semibold prose-td:border prose-td:border-border prose-td:px-4 prose-td:py-2.5 prose-td:text-sm min-h-[200px] animate-fade-in"
           >
             <ReactMarkdown
               remarkPlugins={[remarkGfm, remarkMath]}
@@ -170,9 +156,15 @@ export default function LessonSlides({ content, youtubeUrl, youtubeTitle, onComp
                   <img {...props} loading="lazy" className="rounded-lg shadow-md mx-auto max-h-[400px] object-contain" />
                 ),
                 table: ({ node, ...props }) => (
-                  <div className="overflow-x-auto my-4 rounded-lg border border-border">
+                  <div className="overflow-x-auto my-4 rounded-xl border border-border shadow-sm">
                     <table {...props} className="w-full" />
                   </div>
+                ),
+                th: ({ node, ...props }) => (
+                  <th {...props} className="bg-muted/50 border border-border px-4 py-2.5 text-left text-sm font-semibold text-foreground" />
+                ),
+                td: ({ node, ...props }) => (
+                  <td {...props} className="border border-border px-4 py-2.5 text-sm text-foreground" />
                 ),
               }}
             >{body}</ReactMarkdown>
