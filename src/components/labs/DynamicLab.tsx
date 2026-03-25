@@ -99,6 +99,9 @@ export default function DynamicLab({ data, onComplete, isCompleted }: Props) {
   const blocks = useMemo(() => data?.blocks ?? [], [data]);
   const introData = data?.intro || data?.repend_intro;
 
+  // ── Simulation Engine (XState + mathjs) ──
+  const sim = useLabSimulation(data);
+
   const [showIntro, setShowIntro] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
   const [values, setValues] = useState<Record<string, number>>({});
@@ -111,6 +114,13 @@ export default function DynamicLab({ data, onComplete, isCompleted }: Props) {
   const [imageLoading, setImageLoading] = useState<Record<number, boolean>>({});
 
   const totalSteps = blocks.length;
+
+  // Sync simulation engine variables with local state
+  useEffect(() => {
+    if (sim.isSimulation && Object.keys(sim.variables).length > 0) {
+      setValues(sim.variables);
+    }
+  }, [sim.isSimulation, sim.variables]);
 
   useEffect(() => {
     const initial = Object.fromEntries(variables.map(v => [v.name, v.default ?? 50]));
