@@ -110,7 +110,35 @@ const blueprintToolSchema = {
               variable: { type: "string" },
               image_prompt: { type: "string", description: "Prompt to generate a visual/diagram for this block. Describe the educational diagram, chart, or illustration needed." },
               image_caption: { type: "string", description: "Caption explaining what the image shows" },
-              diagram_type: { type: "string", description: "Type of diagram: flowchart, comparison, process, anatomy, graph, model, cycle, hierarchy" },
+              diagram_type: { type: "string", enum: ["flowchart", "system_map", "process", "cycle", "hierarchy", "comparison"], description: "Type of structured diagram" },
+              diagram_nodes: {
+                type: "array",
+                description: "Nodes for interactive diagram blocks. Each node has id, text, optional x/y position.",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string" },
+                    text: { type: "string" },
+                    x: { type: "number" },
+                    y: { type: "number" },
+                  },
+                  required: ["id", "text"],
+                },
+              },
+              diagram_edges: {
+                type: "array",
+                description: "Edges connecting diagram nodes. Each edge has from/to node IDs and optional label.",
+                items: {
+                  type: "object",
+                  properties: {
+                    from: { type: "string" },
+                    to: { type: "string" },
+                    label: { type: "string" },
+                  },
+                  required: ["from", "to"],
+                },
+              },
+              diagram_caption: { type: "string", description: "Caption for the diagram explaining what it shows" },
               prompt: { type: "string" },
               interactive: { type: "boolean" },
               title: { type: "string" },
@@ -227,21 +255,46 @@ Your job: Design a SIMULATION lab where students make decisions and see conseque
 === REQUIRED STRUCTURE ===
 Generate AT LEAST 6 blocks in this order:
 1. text — Set the scene. Describe the scenario and the student's role.
-2. image or diagram — A visual showing the system, scenario, or key concept. Provide image_prompt describing the educational diagram needed.
+2. diagram — An INTERACTIVE STRUCTURED DIAGRAM showing the system. Use diagram_nodes and diagram_edges (NOT image_prompt). Each node needs id and text. Edges connect nodes with from/to IDs. diagram_type should be flowchart, system_map, process, cycle, hierarchy, or comparison.
 3. table — Show key data the student needs for decisions.
 4. choice_set — First decision with 3-4 options. Each has different tradeoffs affecting ALL variables.
 5. choice_set — Second decision building on the first. New tradeoffs.
 6. step_task — 1-2 calculation or analysis tasks related to the scenario.
-7. image — Another visual showing outcomes, comparisons, or processes. Provide image_prompt.
+7. diagram — Another structured diagram showing relationships, processes, or system architecture. Use diagram_nodes and diagram_edges.
 8. choice_set — Final decision with highest stakes.
 9. insight — Key takeaway connecting decisions to real-world outcomes.
 
-=== IMAGE BLOCKS ===
-- Use type "image" or "diagram" for visual blocks
-- image_prompt must describe a clear educational diagram (e.g. "labeled diagram of an exothermic reaction showing energy levels, reactants, products, and activation energy barrier")
+=== DIAGRAM BLOCKS (STRUCTURED, NOT IMAGES) ===
+- For type "diagram", you MUST provide:
+  - diagram_type: one of flowchart, system_map, process, cycle, hierarchy, comparison
+  - diagram_nodes: array of objects with "id" (string) and "text" (string label for the node)
+  - diagram_edges: array of objects with "from" (node id), "to" (node id), optional "label"
+  - diagram_caption: explains what the diagram shows
+- Example diagram block:
+  {
+    "type": "diagram",
+    "diagram_type": "flowchart",
+    "diagram_nodes": [
+      {"id": "input", "text": "Raw Materials"},
+      {"id": "process", "text": "Chemical Reaction"},
+      {"id": "output", "text": "Product"},
+      {"id": "waste", "text": "Byproducts"}
+    ],
+    "diagram_edges": [
+      {"from": "input", "to": "process", "label": "heated"},
+      {"from": "process", "to": "output"},
+      {"from": "process", "to": "waste", "label": "excess"}
+    ],
+    "diagram_caption": "Flow of materials through the reaction process"
+  }
+- Diagrams are rendered as interactive, draggable node-edge visualizations
+- Include at least 1-2 diagram blocks per lab
+- Do NOT use image_prompt for diagram blocks — use structured data only
+
+=== IMAGE BLOCKS (AI-GENERATED VISUALS) ===
+- Use type "image" only when you need a photorealistic or artistic illustration
+- image_prompt describes what to generate
 - image_caption explains what the student should notice
-- diagram_type categorizes the visual: flowchart, comparison, process, anatomy, graph, model, cycle, hierarchy
-- Include at least 1-2 visual blocks per lab
 
 === RULES ===
 - Variables must be DOMAIN-SPECIFIC to ${topic}. Never generic names.
