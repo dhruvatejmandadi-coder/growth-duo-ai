@@ -256,7 +256,7 @@ export default function DynamicLab({ data, onComplete, isCompleted }: Props) {
 
   // ── Intro screen ──
   if (showIntro && introData) {
-    return <LabIntro title={data.title || "Interactive Lab"} intro={introData} labType={data.kind || "dynamic"} onStart={() => setShowIntro(false)} />;
+    return <LabIntro title={data.title || "Interactive Lab"} intro={introData} labType={data.kind || "dynamic"} onStart={() => { setShowIntro(false); if (sim.isSimulation) sim.sendEvent("START"); }} />;
   }
 
   if (showIntro && !introData) {
