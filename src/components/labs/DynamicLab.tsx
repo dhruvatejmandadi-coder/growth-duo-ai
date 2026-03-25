@@ -41,7 +41,7 @@ type Block =
   | { type: "chart"; chart_type?: string; title?: string; x_label?: string; y_label?: string; datasets?: any[] }
   | { type: "insight"; content: string }
   | { type: "image"; image_prompt?: string; image_caption?: string; image_url?: string; diagram_type?: string }
-  | { type: "diagram"; image_prompt?: string; image_caption?: string; image_url?: string; diagram_type?: string };
+  | { type: "diagram"; diagram_type?: string; diagram_nodes?: any[]; diagram_edges?: any[]; diagram_caption?: string; image_prompt?: string; image_caption?: string; image_url?: string };
 
 type TaskItem = {
   id: string;
