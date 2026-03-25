@@ -110,7 +110,35 @@ const blueprintToolSchema = {
               variable: { type: "string" },
               image_prompt: { type: "string", description: "Prompt to generate a visual/diagram for this block. Describe the educational diagram, chart, or illustration needed." },
               image_caption: { type: "string", description: "Caption explaining what the image shows" },
-              diagram_type: { type: "string", description: "Type of diagram: flowchart, comparison, process, anatomy, graph, model, cycle, hierarchy" },
+              diagram_type: { type: "string", enum: ["flowchart", "system_map", "process", "cycle", "hierarchy", "comparison"], description: "Type of structured diagram" },
+              diagram_nodes: {
+                type: "array",
+                description: "Nodes for interactive diagram blocks. Each node has id, text, optional x/y position.",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string" },
+                    text: { type: "string" },
+                    x: { type: "number" },
+                    y: { type: "number" },
+                  },
+                  required: ["id", "text"],
+                },
+              },
+              diagram_edges: {
+                type: "array",
+                description: "Edges connecting diagram nodes. Each edge has from/to node IDs and optional label.",
+                items: {
+                  type: "object",
+                  properties: {
+                    from: { type: "string" },
+                    to: { type: "string" },
+                    label: { type: "string" },
+                  },
+                  required: ["from", "to"],
+                },
+              },
+              diagram_caption: { type: "string", description: "Caption for the diagram explaining what it shows" },
               prompt: { type: "string" },
               interactive: { type: "boolean" },
               title: { type: "string" },
