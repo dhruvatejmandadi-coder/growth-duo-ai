@@ -178,6 +178,23 @@ const blueprintToolSchema = {
           },
         },
         completion_rule: { type: "string", enum: ["all_blocks", "all_choices", "all_tasks"] },
+        rules: {
+          type: "array",
+          description: "Global rules checked after every decision. When condition is true, effects fire and message shows. Use mathjs syntax for conditions.",
+          items: {
+            type: "object",
+            properties: {
+              condition: { type: "string", description: "mathjs expression e.g. 'temperature > 80' or 'pressure < 20'" },
+              effects: { type: "object", description: "Maps variable name to new value or formula string" },
+              message: { type: "string", description: "Feedback shown when rule fires" },
+            },
+            required: ["condition", "effects", "message"],
+          },
+        },
+        formulas: {
+          type: "object",
+          description: "Derived values computed from variables using mathjs. E.g. { 'efficiency': 'output / input * 100', 'net_profit': 'revenue - costs' }",
+        },
         intro: {
           type: "object",
           properties: {
@@ -303,7 +320,25 @@ Generate AT LEAST 6 blocks in this order:
 - Feedback must explain WHY this happens, not just whether it's right.
 - step_task prompts must be clear questions with definite answers.
 - Include hints and explanations for step_tasks.
-- The lab should take 5-10 minutes to complete.`;
+- The lab should take 5-10 minutes to complete.
+
+=== STATE MACHINE RULES (IMPORTANT) ===
+Generate a "rules" array with 2-4 global rules that fire automatically based on variable conditions.
+These use mathjs syntax for conditions and create realistic system behavior.
+
+Examples:
+- { "condition": "temperature > 90", "effects": { "stability": "-20" }, "message": "Warning: High temperature is destabilizing the reaction!" }
+- { "condition": "budget < 15", "effects": { "morale": "-10" }, "message": "Budget crisis: Team morale drops as resources run out." }
+- { "condition": "population > 800", "effects": { "food_supply": "-15" }, "message": "Overpopulation strain: Food supply cannot keep up with demand." }
+
+Also generate a "formulas" object with 1-3 derived values calculated from variables using mathjs.
+Examples:
+- { "efficiency": "output / input * 100" }
+- { "profit_margin": "(revenue - costs) / revenue * 100" }
+- { "survival_rate": "food_supply * 0.8 + shelter * 0.2" }
+
+Rules + formulas make the lab feel like a REAL SYSTEM that responds to student decisions.`;
+
 
     const userPrompt = `Design a simulation lab for: "${moduleTitle}"
 

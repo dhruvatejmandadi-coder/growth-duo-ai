@@ -7,13 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import {
   CheckCircle2, ChevronRight, ChevronLeft, RotateCcw, Lightbulb,
-  MessageCircleQuestion, TrendingUp, TrendingDown, Minus, ImageIcon, Loader2
+  MessageCircleQuestion, TrendingUp, TrendingDown, Minus, ImageIcon, Loader2,
+  Zap, Activity
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import LabIntro from "./LabIntro";
 import DiagramBlock from "./DiagramBlock";
 import type { DiagramData } from "./DiagramBlock";
 import type { LabIntroData } from "./LabIntro";
+import { useLabSimulation } from "@/hooks/useLabSimulation";
+import { evaluateFormula, checkAnswer } from "@/lib/labSimulationEngine";
 
 type Variable = {
   name: string;
@@ -96,6 +99,9 @@ export default function DynamicLab({ data, onComplete, isCompleted }: Props) {
   const blocks = useMemo(() => data?.blocks ?? [], [data]);
   const introData = data?.intro || data?.repend_intro;
 
+  // ── Simulation Engine (XState + mathjs) ──
+  const sim = useLabSimulation(data);
+
   const [showIntro, setShowIntro] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
   const [values, setValues] = useState<Record<string, number>>({});
@@ -108,6 +114,13 @@ export default function DynamicLab({ data, onComplete, isCompleted }: Props) {
   const [imageLoading, setImageLoading] = useState<Record<number, boolean>>({});
 
   const totalSteps = blocks.length;
+
+  // Sync simulation engine variables with local state
+  useEffect(() => {
+    if (sim.isSimulation && Object.keys(sim.variables).length > 0) {
+      setValues(sim.variables);
+    }
+  }, [sim.isSimulation, sim.variables]);
 
   useEffect(() => {
     const initial = Object.fromEntries(variables.map(v => [v.name, v.default ?? 50]));
@@ -157,7 +170,13 @@ export default function DynamicLab({ data, onComplete, isCompleted }: Props) {
     const block = blocks[blockIdx] as any;
     const choice = block?.choices?.[choiceIdx];
     if (!choice) return;
-    if (choice.effects && typeof choice.effects === "object") {
+
+    // Use XState simulation engine if available
+    if (sim.isSimulation) {
+      // Find the choice_set index among all choice_set blocks
+      const choiceSetIndex = blocks.slice(0, blockIdx + 1).filter(b => b.type === "choice_set").length - 1;
+      sim.sendEvent(`CHOOSE_${choiceSetIndex}_${choiceIdx}`);
+    } else if (choice.effects && typeof choice.effects === "object") {
       setValues(prev => {
         const next = { ...prev };
         for (const v of variables) {
@@ -169,13 +188,16 @@ export default function DynamicLab({ data, onComplete, isCompleted }: Props) {
       });
     }
     setChoiceAnswers(prev => ({ ...prev, [blockIdx]: choiceIdx }));
-  }, [choiceAnswers, blocks, variables]);
+  }, [choiceAnswers, blocks, variables, sim]);
 
-  const submitTask = useCallback((taskId: string) => {
+  const submitTask = useCallback((taskId: string, userAnswer?: string, correctAnswer?: string) => {
     setTaskSubmitted(prev => ({ ...prev, [taskId]: true }));
   }, []);
 
   const reset = () => {
+    if (sim.isSimulation) {
+      sim.reset();
+    }
     const initial = Object.fromEntries(variables.map(v => [v.name, v.default ?? 50]));
     setValues(initial);
     setChoiceAnswers({});
@@ -234,7 +256,7 @@ export default function DynamicLab({ data, onComplete, isCompleted }: Props) {
 
   // ── Intro screen ──
   if (showIntro && introData) {
-    return <LabIntro title={data.title || "Interactive Lab"} intro={introData} labType={data.kind || "dynamic"} onStart={() => setShowIntro(false)} />;
+    return <LabIntro title={data.title || "Interactive Lab"} intro={introData} labType={data.kind || "dynamic"} onStart={() => { setShowIntro(false); if (sim.isSimulation) sim.sendEvent("START"); }} />;
   }
 
   if (showIntro && !introData) {
@@ -276,7 +298,7 @@ export default function DynamicLab({ data, onComplete, isCompleted }: Props) {
             <span>·</span>
             <span>~{Math.max(2, totalSteps * 2)} min</span>
           </div>
-          <Button onClick={() => setShowIntro(false)} className="w-full" size="lg">
+          <Button onClick={() => { setShowIntro(false); if (sim.isSimulation) sim.sendEvent("START"); }} className="w-full" size="lg">
             Start Lab <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
         </CardContent>
@@ -354,6 +376,11 @@ export default function DynamicLab({ data, onComplete, isCompleted }: Props) {
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-muted-foreground">Step {currentStep + 1} / {totalSteps}</span>
             <Badge variant="outline" className={`text-[10px] ${meta.color}`}>{meta.emoji} {meta.label}</Badge>
+            {sim.isSimulation && (
+              <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 gap-1">
+                <Activity className="w-2.5 h-2.5" /> Live Simulation
+              </Badge>
+            )}
           </div>
           <span className="text-xs font-medium text-muted-foreground tabular-nums">{Math.round(progressPercent)}%</span>
         </div>
@@ -396,6 +423,26 @@ export default function DynamicLab({ data, onComplete, isCompleted }: Props) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Simulation feedback toast */}
+      {sim.isSimulation && sim.lastFeedback && (
+        <div className="p-3 rounded-lg bg-accent/50 border border-accent text-sm text-foreground/80 animate-fade-in flex items-start gap-2">
+          <Zap className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+          <span>{sim.lastFeedback}</span>
+        </div>
+      )}
+
+      {/* Derived values from mathjs formulas */}
+      {sim.isSimulation && Object.keys(sim.derivedValues).length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(sim.derivedValues).map(([key, val]) => (
+            <div key={key} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-card text-xs">
+              <span className="text-muted-foreground">{key}:</span>
+              <span className="font-semibold tabular-nums">{typeof val === "number" ? val.toFixed(1) : val}</span>
+            </div>
+          ))}
         </div>
       )}
 
