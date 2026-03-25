@@ -178,6 +178,23 @@ const blueprintToolSchema = {
           },
         },
         completion_rule: { type: "string", enum: ["all_blocks", "all_choices", "all_tasks"] },
+        rules: {
+          type: "array",
+          description: "Global rules checked after every decision. When condition is true, effects fire and message shows. Use mathjs syntax for conditions.",
+          items: {
+            type: "object",
+            properties: {
+              condition: { type: "string", description: "mathjs expression e.g. 'temperature > 80' or 'pressure < 20'" },
+              effects: { type: "object", description: "Maps variable name to new value or formula string" },
+              message: { type: "string", description: "Feedback shown when rule fires" },
+            },
+            required: ["condition", "effects", "message"],
+          },
+        },
+        formulas: {
+          type: "object",
+          description: "Derived values computed from variables using mathjs. E.g. { 'efficiency': 'output / input * 100', 'net_profit': 'revenue - costs' }",
+        },
         intro: {
           type: "object",
           properties: {
