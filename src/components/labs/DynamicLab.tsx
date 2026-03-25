@@ -298,7 +298,7 @@ export default function DynamicLab({ data, onComplete, isCompleted }: Props) {
             <span>·</span>
             <span>~{Math.max(2, totalSteps * 2)} min</span>
           </div>
-          <Button onClick={() => setShowIntro(false)} className="w-full" size="lg">
+          <Button onClick={() => { setShowIntro(false); if (sim.isSimulation) sim.sendEvent("START"); }} className="w-full" size="lg">
             Start Lab <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
         </CardContent>
