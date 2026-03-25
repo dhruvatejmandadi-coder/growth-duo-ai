@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import LabIntro from "./LabIntro";
+import DiagramBlock from "./DiagramBlock";
+import type { DiagramData } from "./DiagramBlock";
 import type { LabIntroData } from "./LabIntro";
 
 type Variable = {
