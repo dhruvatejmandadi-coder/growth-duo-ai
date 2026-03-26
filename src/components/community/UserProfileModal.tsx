@@ -33,6 +33,7 @@ interface CourseData {
   title: string;
   topic: string;
   status: string;
+  completed?: boolean;
 }
 
 interface ChallengeParticipation {
