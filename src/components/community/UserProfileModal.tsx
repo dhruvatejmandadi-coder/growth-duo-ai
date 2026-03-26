@@ -84,6 +84,7 @@ export function UserProfileModal({ open, onOpenChange, userId }: UserProfileModa
     : "";
 
   const completedChallenges = challenges.filter((c) => c.completed_at);
+  const completedCourses = courses.filter((c) => c.completed);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
