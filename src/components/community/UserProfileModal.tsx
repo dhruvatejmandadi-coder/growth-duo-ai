@@ -68,7 +68,7 @@ export function UserProfileModal({ open, onOpenChange, userId }: UserProfileModa
       }));
 
       setProfile(profileRes.data as any);
-      setCourses((coursesRes.data as any) || []);
+      setCourses(coursesWithStatus);
       setChallenges((challengesRes.data as any) || []);
       setLoading(false);
     };
