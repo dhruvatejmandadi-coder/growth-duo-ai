@@ -54,11 +54,18 @@ export function UserProfileModal({ open, onOpenChange, userId }: UserProfileModa
     setLoading(true);
 
     const fetchAll = async () => {
-      const [profileRes, coursesRes, challengesRes] = await Promise.all([
+      const [profileRes, coursesRes, challengesRes, progressRes] = await Promise.all([
         supabase.from("profiles").select("full_name, avatar_url, bio, role, created_at").eq("user_id", userId).single(),
         supabase.from("courses").select("id, title, topic, status").eq("user_id", userId).eq("status", "ready").order("created_at", { ascending: false }).limit(20),
         supabase.from("challenge_participations").select("challenge_id, completed_at, created_at, challenges(title, difficulty)").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
+        supabase.from("course_progress").select("course_id, completed").eq("user_id", userId).eq("completed", true),
       ]);
+
+      const completedCourseIds = new Set(((progressRes.data as any) || []).map((p: any) => p.course_id));
+      const coursesWithStatus = ((coursesRes.data as any) || []).map((c: any) => ({
+        ...c,
+        completed: completedCourseIds.has(c.id),
+      }));
 
       setProfile(profileRes.data as any);
       setCourses((coursesRes.data as any) || []);
