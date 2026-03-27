@@ -1,15 +1,18 @@
 /**
- * React hook for running lab simulations via XState.
- * Bridges the simulation engine with React state.
+ * React hook for running lab simulations via XState + live slider-driven updates.
  */
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useActor } from "@xstate/react";
 import {
   buildSimulationMachine,
   createSimulationActor,
   blueprintToSimConfig,
   evaluateFormula,
   checkAnswer,
+  evaluateRules,
+  computeDerived,
+  randomizeVariables,
+  checkRandomEvents,
+  applyEffects,
   type SimulationConfig,
   type SimVariable,
 } from "@/lib/labSimulationEngine";
@@ -25,6 +28,7 @@ export function useLabSimulation(blueprint: any) {
   const [firedRules, setFiredRules] = useState<Array<{ message: string }>>([]);
   const [lastFeedback, setLastFeedback] = useState<string | null>(null);
   const [currentStateName, setCurrentStateName] = useState<string>("intro");
+  const [goalReached, setGoalReached] = useState(false);
   const actorRef = useRef<any>(null);
 
   // Initialize simulation from blueprint
@@ -33,16 +37,17 @@ export function useLabSimulation(blueprint: any) {
     if (!config) return;
 
     setSimConfig(config);
-    const initialVars = Object.fromEntries(config.variables.map(v => [v.name, v.default]));
+    // Randomize initial variable values for replayability
+    const initialVars = randomizeVariables(config.variables);
     setVariables(initialVars);
-    setDerivedValues({});
+    setDerivedValues(config.formulas ? computeDerived(config.formulas, initialVars) : {});
     setHistory([]);
     setFiredRules([]);
     setLastFeedback(null);
     setCurrentStateName(config.initialState);
+    setGoalReached(false);
     setStatus("idle");
 
-    // Build and start XState actor
     try {
       const machine = buildSimulationMachine(config);
       const actor = createSimulationActor(machine);
@@ -77,6 +82,52 @@ export function useLabSimulation(blueprint: any) {
     };
   }, [blueprint]);
 
+  /**
+   * Update a single variable via slider — triggers rules + derived recalc in real-time.
+   */
+  const updateVariable = useCallback((name: string, value: number) => {
+    if (!simConfig) return;
+    
+    setVariables(prev => {
+      const updated = { ...prev, [name]: value };
+      
+      // Evaluate rules
+      const ruleResult = evaluateRules(simConfig.rules || [], updated, simConfig.variables);
+      const afterRules = ruleResult.variables;
+      
+      // Check random events (low probability per slider change)
+      let afterEvents = afterRules;
+      let eventMessages: string[] = [];
+      if (simConfig.randomEvents && Math.random() < 0.1) { // 10% chance per slider change
+        const evtResult = checkRandomEvents(simConfig.randomEvents, afterRules, simConfig.variables);
+        afterEvents = evtResult.variables;
+        eventMessages = evtResult.messages;
+      }
+      
+      // Compute derived values
+      if (simConfig.formulas) {
+        setDerivedValues(computeDerived(simConfig.formulas, afterEvents));
+      }
+      
+      // Show feedback from rules/events
+      const allMessages = [...ruleResult.messages, ...eventMessages];
+      if (allMessages.length > 0) {
+        setLastFeedback(allMessages.join(" | "));
+        setFiredRules(prev => [...prev, ...allMessages.map(m => ({ message: m }))]);
+      }
+      
+      // Check goal
+      if (simConfig.goal?.condition) {
+        try {
+          const { evalCondition } = require("@/lib/labSimulationEngine");
+          setGoalReached(evalCondition(simConfig.goal.condition, afterEvents));
+        } catch { /* ignore */ }
+      }
+      
+      return afterEvents;
+    });
+  }, [simConfig]);
+
   const sendEvent = useCallback((event: string) => {
     if (actorRef.current) {
       actorRef.current.send({ type: event });
@@ -85,11 +136,9 @@ export function useLabSimulation(blueprint: any) {
 
   const reset = useCallback(() => {
     if (!simConfig) return;
-    // Stop old actor
     if (actorRef.current) {
       actorRef.current.stop();
     }
-    // Rebuild
     try {
       const machine = buildSimulationMachine(simConfig);
       const actor = createSimulationActor(machine);
@@ -111,20 +160,21 @@ export function useLabSimulation(blueprint: any) {
       actor.start();
       actorRef.current = actor;
 
-      const initialVars = Object.fromEntries(simConfig.variables.map(v => [v.name, v.default]));
+      // Re-randomize for different experience each time
+      const initialVars = randomizeVariables(simConfig.variables);
       setVariables(initialVars);
-      setDerivedValues({});
+      setDerivedValues(simConfig.formulas ? computeDerived(simConfig.formulas, initialVars) : {});
       setHistory([]);
       setFiredRules([]);
       setLastFeedback(null);
       setCurrentStateName(simConfig.initialState);
+      setGoalReached(false);
       setStatus("running");
     } catch (e) {
       console.warn("Failed to rebuild simulation:", e);
     }
   }, [simConfig]);
 
-  // Math helpers exposed for task validation
   const evalFormula = useCallback((formula: string) => {
     return evaluateFormula(formula, variables);
   }, [variables]);
@@ -143,7 +193,9 @@ export function useLabSimulation(blueprint: any) {
     lastFeedback,
     currentStateName,
     simConfig,
+    goalReached,
     sendEvent,
+    updateVariable,
     reset,
     evalFormula,
     validateAnswer,
