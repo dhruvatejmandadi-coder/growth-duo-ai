@@ -330,7 +330,7 @@ export default function DynamicLab({ data, onComplete, isCompleted }: Props) {
                   <div key={v.name} className="flex items-center gap-2 rounded-lg border border-border/50 bg-card px-3 py-2">
                     <span className="text-base">{v.icon}</span>
                     <div className="min-w-0">
-                      <p className="text-xs font-medium truncate">{v.name}</p>
+                      <p className="text-xs font-medium truncate">{formatVarName(v.name)}</p>
                       <p className="text-[10px] text-muted-foreground">{v.min}–{v.max} {v.unit}</p>
                     </div>
                   </div>
