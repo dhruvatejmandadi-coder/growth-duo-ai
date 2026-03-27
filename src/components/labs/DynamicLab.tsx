@@ -506,7 +506,7 @@ export default function DynamicLab({ data, onComplete, isCompleted }: Props) {
             return (
               <div key={v.name} className="rounded-lg border border-border bg-card px-3 py-2 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium truncate">{v.icon} {v.name}</span>
+                  <span className="text-xs font-medium truncate">{v.icon} {formatVarName(v.name)}</span>
                   <span className={`text-xs font-bold tabular-nums ${color}`}>{value}</span>
                 </div>
                 <div className="h-1 bg-secondary rounded-full overflow-hidden">
