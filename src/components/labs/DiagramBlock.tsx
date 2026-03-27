@@ -331,7 +331,7 @@ export default function DiagramBlock({ data }: Props) {
                   dominantBaseline="middle"
                   className="fill-foreground text-[13px] font-semibold select-none pointer-events-none"
                 >
-                  {node.text.length > 22 ? node.text.slice(0, 20) + "..." : node.text}
+                  {node.text.length > 26 ? node.text.slice(0, 24) + "…" : node.text}
                 </text>
               </g>
             );

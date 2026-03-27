@@ -678,7 +678,7 @@ export default function DynamicLab({ data, onComplete, isCompleted }: Props) {
                       return (
                         <div key={v.name} className="p-4 rounded-xl border border-border bg-card space-y-3">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">{v.icon} {v.name}</span>
+                            <span className="text-sm font-medium">{v.icon} {formatVarName(v.name)}</span>
                             <span className="text-sm font-bold tabular-nums">{value} {v.unit}</span>
                           </div>
                           <Slider
