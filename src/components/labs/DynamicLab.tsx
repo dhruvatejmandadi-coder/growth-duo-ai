@@ -18,6 +18,14 @@ import type { LabIntroData } from "./LabIntro";
 import { useLabSimulation } from "@/hooks/useLabSimulation";
 import { evaluateFormula, checkAnswer } from "@/lib/labSimulationEngine";
 
+/** Convert snake_case/camelCase variable names to readable labels */
+function formatVarName(name: string): string {
+  return name
+    .replace(/_/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
 type Variable = {
   name: string;
   icon: string;
