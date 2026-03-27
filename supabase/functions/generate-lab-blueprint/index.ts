@@ -59,17 +59,27 @@ const blueprintToolSchema = {
   type: "function" as const,
   function: {
     name: "create_lab_blueprint",
-    description: "Create an interactive lab blueprint with UI blocks, variables, and scenario",
+    description: "Create an interactive SIMULATION lab — a system the user controls with sliders and decisions, seeing live outputs update in real time.",
     parameters: {
       type: "object",
       properties: {
         title: { type: "string" },
         kind: { type: "string", description: "Unique descriptive kind like 'ecosystem_balance', 'reaction_optimizer'" },
-        scenario: { type: "string", description: "2-3 sentence real-world scenario" },
+        scenario: { type: "string", description: "2-3 sentence real-world scenario placing the student in a role" },
         learning_goal: { type: "string" },
         key_insight: { type: "string", description: "The main takeaway from this lab" },
+        goal: {
+          type: "object",
+          description: "The objective the student is trying to achieve. Include a measurable condition.",
+          properties: {
+            description: { type: "string", description: "Human-readable goal like 'Maximize efficiency above 80% while keeping costs below $5000'" },
+            condition: { type: "string", description: "mathjs expression that evaluates to true when goal is met, e.g. 'efficiency > 80 and costs < 5000'" },
+          },
+          required: ["description"],
+        },
         variables: {
           type: "array",
+          description: "3-6 domain-specific system variables. These represent the state of the simulation.",
           items: {
             type: "object",
             properties: {
@@ -86,11 +96,11 @@ const blueprintToolSchema = {
         },
         blocks: {
           type: "array",
-          description: "Ordered UI blocks. MUST include at least 5 blocks mixing types.",
+          description: "Ordered UI blocks. MUST include control_panel and output_display blocks for interactivity.",
           items: {
             type: "object",
             properties: {
-              type: { type: "string", enum: ["text", "choice_set", "slider", "table", "step_task", "chart", "insight", "image", "diagram"] },
+              type: { type: "string", enum: ["text", "choice_set", "slider", "control_panel", "output_display", "table", "step_task", "chart", "insight", "image", "diagram"] },
               content: { type: "string" },
               question: { type: "string" },
               emoji: { type: "string" },
@@ -100,20 +110,21 @@ const blueprintToolSchema = {
                   type: "object",
                   properties: {
                     text: { type: "string" },
-                    feedback: { type: "string", description: "Explain what happens when this choice is made. Describe consequences, NOT just correct/incorrect." },
+                    feedback: { type: "string", description: "Describe CONSEQUENCES, not correct/incorrect" },
                     effects: { type: "object", description: "Maps variable name to new value" },
                     is_best: { type: "boolean" },
                   },
                   required: ["text", "feedback", "effects"],
                 },
               },
-              variable: { type: "string" },
-              image_prompt: { type: "string", description: "Prompt to generate a visual/diagram for this block. Describe the educational diagram, chart, or illustration needed." },
-              image_caption: { type: "string", description: "Caption explaining what the image shows" },
-              diagram_type: { type: "string", enum: ["flowchart", "system_map", "process", "cycle", "hierarchy", "comparison"], description: "Type of structured diagram" },
+              variable: { type: "string", description: "For slider block: which variable to control" },
+              variables: { type: "array", items: { type: "string" }, description: "For control_panel block: list of variable names to show as sliders" },
+              outputs: { type: "array", items: { type: "string" }, description: "For output_display block: list of formula keys or variable names to display live" },
+              image_prompt: { type: "string" },
+              image_caption: { type: "string" },
+              diagram_type: { type: "string", enum: ["flowchart", "system_map", "process", "cycle", "hierarchy", "comparison"] },
               diagram_nodes: {
                 type: "array",
-                description: "Nodes for interactive diagram blocks. Each node has id, text, optional x/y position.",
                 items: {
                   type: "object",
                   properties: {
@@ -127,7 +138,6 @@ const blueprintToolSchema = {
               },
               diagram_edges: {
                 type: "array",
-                description: "Edges connecting diagram nodes. Each edge has from/to node IDs and optional label.",
                 items: {
                   type: "object",
                   properties: {
@@ -138,7 +148,7 @@ const blueprintToolSchema = {
                   required: ["from", "to"],
                 },
               },
-              diagram_caption: { type: "string", description: "Caption for the diagram explaining what it shows" },
+              diagram_caption: { type: "string" },
               prompt: { type: "string" },
               interactive: { type: "boolean" },
               title: { type: "string" },
@@ -180,20 +190,33 @@ const blueprintToolSchema = {
         completion_rule: { type: "string", enum: ["all_blocks", "all_choices", "all_tasks"] },
         rules: {
           type: "array",
-          description: "Global rules checked after every decision. When condition is true, effects fire and message shows. Use mathjs syntax for conditions.",
+          description: "3-5 global rules checked after EVERY variable change (slider or decision). Use mathjs syntax. These make the system feel alive.",
           items: {
             type: "object",
             properties: {
               condition: { type: "string", description: "mathjs expression e.g. 'temperature > 80' or 'pressure < 20'" },
-              effects: { type: "object", description: "Maps variable name to new value or formula string" },
-              message: { type: "string", description: "Feedback shown when rule fires" },
+              effects: { type: "object", description: "Maps variable name to new value or formula string like '+10' or '-15'" },
+              message: { type: "string", description: "Feedback shown when rule fires — describe what's happening in the system" },
             },
             required: ["condition", "effects", "message"],
           },
         },
         formulas: {
           type: "object",
-          description: "Derived values computed from variables using mathjs. E.g. { 'efficiency': 'output / input * 100', 'net_profit': 'revenue - costs' }",
+          description: "2-4 derived values computed from variables using mathjs. These update LIVE as sliders move. E.g. { 'efficiency': 'output / input * 100' }",
+        },
+        random_events: {
+          type: "array",
+          description: "1-3 random events that may fire during simulation. Each has a probability (0-1) of occurring per interaction.",
+          items: {
+            type: "object",
+            properties: {
+              probability: { type: "number", description: "Chance of firing (0.05 to 0.3)" },
+              effects: { type: "object", description: "Variable changes when event fires" },
+              message: { type: "string", description: "What happened — e.g. 'Unexpected market crash! Revenue drops.'" },
+            },
+            required: ["probability", "effects", "message"],
+          },
         },
         intro: {
           type: "object",
@@ -206,7 +229,7 @@ const blueprintToolSchema = {
           },
         },
       },
-      required: ["title", "kind", "scenario", "variables", "blocks", "completion_rule"],
+      required: ["title", "kind", "scenario", "variables", "blocks", "completion_rule", "rules", "formulas", "goal"],
     },
   },
 };
