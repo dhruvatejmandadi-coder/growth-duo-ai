@@ -30,7 +30,7 @@ type Props = {
 
 // Layout engine — auto-positions nodes if no coordinates given
 function autoLayout(nodes: DiagramNode[], edges: DiagramEdge[], type: string): DiagramNode[] {
-  if (nodes.every(n => typeof n.x === "number" && typeof n.y === "number")) {
+  if (nodes.every((n) => typeof n.x === "number" && typeof n.y === "number")) {
     return nodes;
   }
 
@@ -51,13 +51,13 @@ function autoLayout(nodes: DiagramNode[], edges: DiagramEdge[], type: string): D
 
   if (type === "hierarchy") {
     // Find roots (nodes not targeted by edges)
-    const targets = new Set(edges.map(e => e.to));
-    const roots = positioned.filter(n => !targets.has(n.id));
+    const targets = new Set(edges.map((e) => e.to));
+    const roots = positioned.filter((n) => !targets.has(n.id));
     if (roots.length === 0 && positioned.length > 0) roots.push(positioned[0]);
 
     const levels: Map<string, number> = new Map();
-    const queue = roots.map(r => r.id);
-    roots.forEach(r => levels.set(r.id, 0));
+    const queue = roots.map((r) => r.id);
+    roots.forEach((r) => levels.set(r.id, 0));
 
     while (queue.length > 0) {
       const curr = queue.shift()!;
@@ -69,10 +69,12 @@ function autoLayout(nodes: DiagramNode[], edges: DiagramEdge[], type: string): D
         }
       }
     }
-    positioned.forEach(n => { if (!levels.has(n.id)) levels.set(n.id, 0); });
+    positioned.forEach((n) => {
+      if (!levels.has(n.id)) levels.set(n.id, 0);
+    });
 
     const byLevel: Record<number, DiagramNode[]> = {};
-    positioned.forEach(n => {
+    positioned.forEach((n) => {
       const l = levels.get(n.id) || 0;
       if (!byLevel[l]) byLevel[l] = [];
       byLevel[l].push(n);
@@ -147,62 +149,74 @@ export default function DiagramBlock({ data }: Props) {
     }
   }, [data]);
 
-  const nodeMap = new Map(nodes.map(n => [n.id, n]));
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
 
-  const handleMouseDown = useCallback((e: React.MouseEvent, nodeId: string) => {
-    const node = nodeMap.get(nodeId);
-    if (!node) return;
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    setDragNode(nodeId);
-    setOffset({
-      x: e.clientX - rect.left - (node.x || 0),
-      y: e.clientY - rect.top - (node.y || 0),
-    });
-  }, [nodeMap]);
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent, nodeId: string) => {
+      const node = nodeMap.get(nodeId);
+      if (!node) return;
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setDragNode(nodeId);
+      setOffset({
+        x: e.clientX - rect.left - (node.x || 0),
+        y: e.clientY - rect.top - (node.y || 0),
+      });
+    },
+    [nodeMap],
+  );
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!dragNode) return;
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const x = e.clientX - rect.left - offset.x;
-    const y = e.clientY - rect.top - offset.y;
-    setNodes(prev => prev.map(n => n.id === dragNode ? { ...n, x, y } : n));
-  }, [dragNode, offset]);
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!dragNode) return;
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const x = e.clientX - rect.left - offset.x;
+      const y = e.clientY - rect.top - offset.y;
+      setNodes((prev) => prev.map((n) => (n.id === dragNode ? { ...n, x, y } : n)));
+    },
+    [dragNode, offset],
+  );
 
   const handleMouseUp = useCallback(() => {
     setDragNode(null);
   }, []);
 
   // Touch support
-  const handleTouchStart = useCallback((e: React.TouchEvent, nodeId: string) => {
-    const touch = e.touches[0];
-    const node = nodeMap.get(nodeId);
-    if (!node || !touch) return;
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    setDragNode(nodeId);
-    setOffset({
-      x: touch.clientX - rect.left - (node.x || 0),
-      y: touch.clientY - rect.top - (node.y || 0),
-    });
-  }, [nodeMap]);
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent, nodeId: string) => {
+      const touch = e.touches[0];
+      const node = nodeMap.get(nodeId);
+      if (!node || !touch) return;
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setDragNode(nodeId);
+      setOffset({
+        x: touch.clientX - rect.left - (node.x || 0),
+        y: touch.clientY - rect.top - (node.y || 0),
+      });
+    },
+    [nodeMap],
+  );
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!dragNode) return;
-    const touch = e.touches[0];
-    if (!touch) return;
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    e.preventDefault();
-    const x = touch.clientX - rect.left - offset.x;
-    const y = touch.clientY - rect.top - offset.y;
-    setNodes(prev => prev.map(n => n.id === dragNode ? { ...n, x, y } : n));
-  }, [dragNode, offset]);
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (!dragNode) return;
+      const touch = e.touches[0];
+      if (!touch) return;
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      e.preventDefault();
+      const x = touch.clientX - rect.left - offset.x;
+      const y = touch.clientY - rect.top - offset.y;
+      setNodes((prev) => prev.map((n) => (n.id === dragNode ? { ...n, x, y } : n)));
+    },
+    [dragNode, offset],
+  );
 
   // Compute SVG dimensions
-  const maxX = Math.max(400, ...nodes.map(n => (n.x || 0) + 80));
-  const maxY = Math.max(300, ...nodes.map(n => (n.y || 0) + 50));
+  const maxX = Math.max(400, ...nodes.map((n) => (n.x || 0) + 80));
+  const maxY = Math.max(300, ...nodes.map((n) => (n.y || 0) + 50));
   const svgW = maxX + 40;
   const svgH = maxY + 40;
 
@@ -214,7 +228,7 @@ export default function DiagramBlock({ data }: Props) {
       <div className="space-y-3">
         {data.title && <h4 className="text-sm font-bold">{data.title}</h4>}
         <div className="p-4 rounded-xl border border-border bg-muted/10 space-y-2">
-          {data.nodes?.map(n => (
+          {data.nodes?.map((n) => (
             <div key={n.id} className={`px-3 py-2 rounded-lg border text-sm ${colorClass}`}>
               {n.text}
             </div>
@@ -223,7 +237,8 @@ export default function DiagramBlock({ data }: Props) {
             <div className="space-y-1 mt-2">
               {data.edges.map((e, i) => (
                 <p key={i} className="text-xs text-muted-foreground">
-                  {data.nodes.find(n => n.id === e.from)?.text || e.from} → {data.nodes.find(n => n.id === e.to)?.text || e.to}
+                  {data.nodes.find((n) => n.id === e.from)?.text || e.from} →{" "}
+                  {data.nodes.find((n) => n.id === e.to)?.text || e.to}
                   {e.label ? ` (${e.label})` : ""}
                 </p>
               ))}
@@ -243,7 +258,7 @@ export default function DiagramBlock({ data }: Props) {
             📐 {DIAGRAM_LABELS[data.diagram_type] || data.diagram_type}
           </Badge>
         )}
-        <span className="text-[10px] text-muted-foreground">Drag nodes to rearrange</span>
+        <span className="text-[14px] text-muted-foreground">This is your system</span>
       </div>
 
       <div
@@ -255,12 +270,7 @@ export default function DiagramBlock({ data }: Props) {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleMouseUp}
       >
-        <svg
-          ref={svgRef}
-          viewBox={`0 0 ${svgW} ${svgH}`}
-          className="w-full"
-          style={{ minHeight: 280, maxHeight: 500 }}
-        >
+        <svg ref={svgRef} viewBox={`0 0 ${svgW} ${svgH}`} className="w-full" style={{ minHeight: 280, maxHeight: 500 }}>
           <defs>
             <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
               <polygon points="0 0, 10 3.5, 0 7" className="fill-muted-foreground/60" />
@@ -272,15 +282,18 @@ export default function DiagramBlock({ data }: Props) {
             const fromNode = nodeMap.get(edge.from);
             const toNode = nodeMap.get(edge.to);
             if (!fromNode || !toNode) return null;
-            const x1 = (fromNode.x || 0);
-            const y1 = (fromNode.y || 0);
-            const x2 = (toNode.x || 0);
-            const y2 = (toNode.y || 0);
+            const x1 = fromNode.x || 0;
+            const y1 = fromNode.y || 0;
+            const x2 = toNode.x || 0;
+            const y2 = toNode.y || 0;
 
             return (
               <g key={`edge-${i}`}>
                 <line
-                  x1={x1} y1={y1} x2={x2} y2={y2}
+                  x1={x1}
+                  y1={y1}
+                  x2={x2}
+                  y2={y2}
                   className="stroke-muted-foreground/40"
                   strokeWidth={2}
                   markerEnd="url(#arrowhead)"
@@ -300,10 +313,10 @@ export default function DiagramBlock({ data }: Props) {
           })}
 
           {/* Nodes */}
-          {nodes.map(node => {
+          {nodes.map((node) => {
             const textLen = node.text.length;
-            const boxW = Math.max(130, Math.min(240, textLen * 9 + 32));
-            const boxH = 52;
+            const boxW = Math.max(90, Math.min(180, textLen * 8 + 24));
+            const boxH = 40;
             const nx = (node.x || 0) - boxW / 2;
             const ny = (node.y || 0) - boxH / 2;
             const isDragging = dragNode === node.id;
@@ -329,9 +342,9 @@ export default function DiagramBlock({ data }: Props) {
                   y={(node.y || 0) + 1}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  className="fill-foreground text-[13px] font-semibold select-none pointer-events-none"
+                  className="fill-foreground text-[11px] font-medium select-none pointer-events-none"
                 >
-                  {node.text.length > 26 ? node.text.slice(0, 24) + "…" : node.text}
+                  {node.text.length > 22 ? node.text.slice(0, 20) + "..." : node.text}
                 </text>
               </g>
             );
@@ -339,9 +352,7 @@ export default function DiagramBlock({ data }: Props) {
         </svg>
       </div>
 
-      {data.caption && (
-        <p className="text-xs text-muted-foreground text-center italic">{data.caption}</p>
-      )}
+      {data.caption && <p className="text-xs text-muted-foreground text-center italic">{data.caption}</p>}
     </div>
   );
 }
