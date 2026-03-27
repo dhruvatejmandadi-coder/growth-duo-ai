@@ -46,8 +46,10 @@ export type SimulationConfig = {
   initialState: string;
   states: SimState[];
   variables: SimVariable[];
-  rules?: SimRule[];        // Global rules checked after every transition
-  formulas?: Record<string, string>; // Derived values, e.g. "efficiency": "output / input * 100"
+  rules?: SimRule[];
+  formulas?: Record<string, string>;
+  goal?: { description: string; condition?: string };
+  randomEvents?: Array<{ probability: number; effects: Record<string, string | number>; message: string }>;
 };
 
 export type SimulationSnapshot = {
@@ -60,7 +62,7 @@ export type SimulationSnapshot = {
 
 // ── Math evaluation (safe) ──
 
-function safeEval(expr: string, vars: Record<string, number>): number {
+export function safeEval(expr: string, vars: Record<string, number>): number {
   try {
     const result = evaluate(expr, vars);
     if (typeof result === "number" && isFinite(result)) return result;
@@ -70,7 +72,7 @@ function safeEval(expr: string, vars: Record<string, number>): number {
   }
 }
 
-function evalCondition(expr: string, vars: Record<string, number>): boolean {
+export function evalCondition(expr: string, vars: Record<string, number>): boolean {
   try {
     const result = evaluate(expr, vars);
     return Boolean(result);
@@ -79,7 +81,7 @@ function evalCondition(expr: string, vars: Record<string, number>): boolean {
   }
 }
 
-function applyEffects(
+export function applyEffects(
   effects: Record<string, string | number>,
   currentVars: Record<string, number>,
   variables: SimVariable[]
@@ -94,7 +96,6 @@ function applyEffects(
     if (typeof val === "number") {
       newVal = val;
     } else if (typeof val === "string") {
-      // Could be a formula like "temperature + 10" or a relative "+15"
       if (val.startsWith("+") || val.startsWith("-")) {
         newVal = (currentVars[key] ?? v.default) + safeEval(val, currentVars);
       } else {
@@ -106,6 +107,71 @@ function applyEffects(
     next[key] = Math.max(v.min, Math.min(v.max, Math.round(newVal * 100) / 100));
   }
   return next;
+}
+
+/**
+ * Evaluate all rules against current variables, apply effects, return updated vars + fired messages.
+ */
+export function evaluateRules(
+  rules: SimRule[],
+  vars: Record<string, number>,
+  variables: SimVariable[]
+): { variables: Record<string, number>; messages: string[] } {
+  let current = { ...vars };
+  const messages: string[] = [];
+  for (const rule of rules) {
+    if (evalCondition(rule.condition, current)) {
+      current = applyEffects(rule.effects, current, variables);
+      if (rule.message) messages.push(rule.message);
+    }
+  }
+  return { variables: current, messages };
+}
+
+/**
+ * Compute all derived values from formulas.
+ */
+export function computeDerived(
+  formulas: Record<string, string>,
+  vars: Record<string, number>
+): Record<string, number> {
+  const result: Record<string, number> = {};
+  for (const [key, formula] of Object.entries(formulas)) {
+    result[key] = safeEval(formula, vars);
+  }
+  return result;
+}
+
+/**
+ * Randomize initial variable values within their min/max range.
+ * Applies a ±20% jitter around the default.
+ */
+export function randomizeVariables(variables: SimVariable[]): Record<string, number> {
+  return Object.fromEntries(variables.map(v => {
+    const range = v.max - v.min;
+    const jitter = (Math.random() - 0.5) * range * 0.4; // ±20% of range
+    const val = Math.round(Math.max(v.min, Math.min(v.max, v.default + jitter)));
+    return [v.name, val];
+  }));
+}
+
+/**
+ * Check random events — each has a probability of firing.
+ */
+export function checkRandomEvents(
+  events: Array<{ probability: number; effects: Record<string, string | number>; message: string }>,
+  vars: Record<string, number>,
+  variables: SimVariable[]
+): { variables: Record<string, number>; messages: string[] } {
+  let current = { ...vars };
+  const messages: string[] = [];
+  for (const evt of events) {
+    if (Math.random() < evt.probability) {
+      current = applyEffects(evt.effects, current, variables);
+      messages.push(evt.message);
+    }
+  }
+  return { variables: current, messages };
 }
 
 // ── Create XState machine from SimulationConfig ──
@@ -124,7 +190,6 @@ export function buildSimulationMachine(config: SimulationConfig) {
           if (t.effects) {
             vars = applyEffects(t.effects, vars, config.variables);
           }
-          // Check global rules
           const firedRules: Array<{ message: string }> = [];
           if (config.rules) {
             for (const rule of config.rules) {
@@ -134,7 +199,6 @@ export function buildSimulationMachine(config: SimulationConfig) {
               }
             }
           }
-          // Calculate derived values
           const derivedValues: Record<string, number> = {};
           if (config.formulas) {
             for (const [key, formula] of Object.entries(config.formulas)) {
@@ -199,7 +263,6 @@ export function createSimulationActor(machine: AnyStateMachine) {
 }
 
 // ── Extract simulation config from blueprint blocks ──
-// Converts existing blueprint format into SimulationConfig
 
 export function blueprintToSimConfig(blueprint: any): SimulationConfig | null {
   const variables: SimVariable[] = blueprint.variables || [];
@@ -212,7 +275,6 @@ export function blueprintToSimConfig(blueprint: any): SimulationConfig | null {
 
   if (choiceBlocks.length === 0) return null;
 
-  // Create a state for each choice_set block + an intro state + a final state
   states.push({
     id: "intro",
     label: "Introduction",
@@ -241,7 +303,6 @@ export function blueprintToSimConfig(blueprint: any): SimulationConfig | null {
     transitions: [],
   });
 
-  // Extract rules from blueprint if present
   const rules: SimRule[] = [];
   if (blueprint.rules) {
     for (const r of blueprint.rules) {
@@ -259,6 +320,8 @@ export function blueprintToSimConfig(blueprint: any): SimulationConfig | null {
     variables,
     rules,
     formulas: blueprint.formulas,
+    goal: blueprint.goal,
+    randomEvents: blueprint.random_events,
   };
 }
 
@@ -273,12 +336,10 @@ export function checkAnswer(
   correctAnswer: string,
   tolerance: number = 0.01
 ): boolean {
-  // Try numeric comparison first
   const userNum = parseFloat(userAnswer);
   const correctNum = parseFloat(correctAnswer);
   if (!isNaN(userNum) && !isNaN(correctNum)) {
     return Math.abs(userNum - correctNum) <= Math.abs(correctNum * tolerance);
   }
-  // String comparison
   return userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
 }

@@ -59,17 +59,27 @@ const blueprintToolSchema = {
   type: "function" as const,
   function: {
     name: "create_lab_blueprint",
-    description: "Create an interactive lab blueprint with UI blocks, variables, and scenario",
+    description: "Create an interactive SIMULATION lab — a system the user controls with sliders and decisions, seeing live outputs update in real time.",
     parameters: {
       type: "object",
       properties: {
         title: { type: "string" },
         kind: { type: "string", description: "Unique descriptive kind like 'ecosystem_balance', 'reaction_optimizer'" },
-        scenario: { type: "string", description: "2-3 sentence real-world scenario" },
+        scenario: { type: "string", description: "2-3 sentence real-world scenario placing the student in a role" },
         learning_goal: { type: "string" },
         key_insight: { type: "string", description: "The main takeaway from this lab" },
+        goal: {
+          type: "object",
+          description: "The objective the student is trying to achieve. Include a measurable condition.",
+          properties: {
+            description: { type: "string", description: "Human-readable goal like 'Maximize efficiency above 80% while keeping costs below $5000'" },
+            condition: { type: "string", description: "mathjs expression that evaluates to true when goal is met, e.g. 'efficiency > 80 and costs < 5000'" },
+          },
+          required: ["description"],
+        },
         variables: {
           type: "array",
+          description: "3-6 domain-specific system variables. These represent the state of the simulation.",
           items: {
             type: "object",
             properties: {
@@ -86,11 +96,11 @@ const blueprintToolSchema = {
         },
         blocks: {
           type: "array",
-          description: "Ordered UI blocks. MUST include at least 5 blocks mixing types.",
+          description: "Ordered UI blocks. MUST include control_panel and output_display blocks for interactivity.",
           items: {
             type: "object",
             properties: {
-              type: { type: "string", enum: ["text", "choice_set", "slider", "table", "step_task", "chart", "insight", "image", "diagram"] },
+              type: { type: "string", enum: ["text", "choice_set", "slider", "control_panel", "output_display", "table", "step_task", "chart", "insight", "image", "diagram"] },
               content: { type: "string" },
               question: { type: "string" },
               emoji: { type: "string" },
@@ -100,20 +110,21 @@ const blueprintToolSchema = {
                   type: "object",
                   properties: {
                     text: { type: "string" },
-                    feedback: { type: "string", description: "Explain what happens when this choice is made. Describe consequences, NOT just correct/incorrect." },
+                    feedback: { type: "string", description: "Describe CONSEQUENCES, not correct/incorrect" },
                     effects: { type: "object", description: "Maps variable name to new value" },
                     is_best: { type: "boolean" },
                   },
                   required: ["text", "feedback", "effects"],
                 },
               },
-              variable: { type: "string" },
-              image_prompt: { type: "string", description: "Prompt to generate a visual/diagram for this block. Describe the educational diagram, chart, or illustration needed." },
-              image_caption: { type: "string", description: "Caption explaining what the image shows" },
-              diagram_type: { type: "string", enum: ["flowchart", "system_map", "process", "cycle", "hierarchy", "comparison"], description: "Type of structured diagram" },
+              variable: { type: "string", description: "For slider block: which variable to control" },
+              variables: { type: "array", items: { type: "string" }, description: "For control_panel block: list of variable names to show as sliders" },
+              outputs: { type: "array", items: { type: "string" }, description: "For output_display block: list of formula keys or variable names to display live" },
+              image_prompt: { type: "string" },
+              image_caption: { type: "string" },
+              diagram_type: { type: "string", enum: ["flowchart", "system_map", "process", "cycle", "hierarchy", "comparison"] },
               diagram_nodes: {
                 type: "array",
-                description: "Nodes for interactive diagram blocks. Each node has id, text, optional x/y position.",
                 items: {
                   type: "object",
                   properties: {
@@ -127,7 +138,6 @@ const blueprintToolSchema = {
               },
               diagram_edges: {
                 type: "array",
-                description: "Edges connecting diagram nodes. Each edge has from/to node IDs and optional label.",
                 items: {
                   type: "object",
                   properties: {
@@ -138,7 +148,7 @@ const blueprintToolSchema = {
                   required: ["from", "to"],
                 },
               },
-              diagram_caption: { type: "string", description: "Caption for the diagram explaining what it shows" },
+              diagram_caption: { type: "string" },
               prompt: { type: "string" },
               interactive: { type: "boolean" },
               title: { type: "string" },
@@ -180,20 +190,33 @@ const blueprintToolSchema = {
         completion_rule: { type: "string", enum: ["all_blocks", "all_choices", "all_tasks"] },
         rules: {
           type: "array",
-          description: "Global rules checked after every decision. When condition is true, effects fire and message shows. Use mathjs syntax for conditions.",
+          description: "3-5 global rules checked after EVERY variable change (slider or decision). Use mathjs syntax. These make the system feel alive.",
           items: {
             type: "object",
             properties: {
               condition: { type: "string", description: "mathjs expression e.g. 'temperature > 80' or 'pressure < 20'" },
-              effects: { type: "object", description: "Maps variable name to new value or formula string" },
-              message: { type: "string", description: "Feedback shown when rule fires" },
+              effects: { type: "object", description: "Maps variable name to new value or formula string like '+10' or '-15'" },
+              message: { type: "string", description: "Feedback shown when rule fires — describe what's happening in the system" },
             },
             required: ["condition", "effects", "message"],
           },
         },
         formulas: {
           type: "object",
-          description: "Derived values computed from variables using mathjs. E.g. { 'efficiency': 'output / input * 100', 'net_profit': 'revenue - costs' }",
+          description: "2-4 derived values computed from variables using mathjs. These update LIVE as sliders move. E.g. { 'efficiency': 'output / input * 100' }",
+        },
+        random_events: {
+          type: "array",
+          description: "1-3 random events that may fire during simulation. Each has a probability (0-1) of occurring per interaction.",
+          items: {
+            type: "object",
+            properties: {
+              probability: { type: "number", description: "Chance of firing (0.05 to 0.3)" },
+              effects: { type: "object", description: "Variable changes when event fires" },
+              message: { type: "string", description: "What happened — e.g. 'Unexpected market crash! Revenue drops.'" },
+            },
+            required: ["probability", "effects", "message"],
+          },
         },
         intro: {
           type: "object",
@@ -206,7 +229,7 @@ const blueprintToolSchema = {
           },
         },
       },
-      required: ["title", "kind", "scenario", "variables", "blocks", "completion_rule"],
+      required: ["title", "kind", "scenario", "variables", "blocks", "completion_rule", "rules", "formulas", "goal"],
     },
   },
 };
@@ -258,97 +281,82 @@ serve(async (req) => {
     const moduleTitle = mod.title;
     const labConcept = mod.lab_description || mod.title;
 
-    const systemPrompt = `You are a SIMULATION DESIGNER for Repend, a decision-based interactive learning platform.
+    const systemPrompt = `You are a SIMULATION SYSTEM DESIGNER for Repend. You convert ANY topic into an INTERACTIVE SYSTEM the student controls.
 
-Your job: Design a SIMULATION lab where students make decisions and see consequences. NOT a quiz.
+=== CORE PRINCIPLE ===
+You are NOT making quizzes or static content. You are building a CONTROLLABLE SYSTEM where:
+- Students adjust variables via sliders
+- The system reacts in REAL TIME (rules fire, derived outputs update)
+- Different inputs lead to different outcomes
+- No single "correct" path — students explore and discover
 
-=== SIMULATION DESIGN PRINCIPLES ===
-1. Labs are SIMULATIONS, not quizzes. Students make decisions that change system variables.
-2. Every choice_set must present a TRADEOFF — no option should be obviously best.
-3. Feedback should describe CONSEQUENCES ("This increases X but decreases Y"), NOT "Correct/Incorrect".
-4. Variables should change based on decisions, creating a cause-effect chain.
-5. The student plays a ROLE (engineer, doctor, economist, researcher, etc.)
+=== TOPIC CLASSIFICATION ===
+Classify the topic into a simulation type:
+- Math → calculation_simulation (inputs → computed outputs)
+- Science → variable_relationship_simulation (interconnected variables)
+- Business/Economics → decision_tradeoff_simulation (optimize competing goals)
+- Biology → rule_based_simulation (conditions trigger system changes)
+- General → interactive_scenario (decisions with consequences)
 
-=== REQUIRED STRUCTURE ===
-Generate AT LEAST 6 blocks in this order:
-1. text — Set the scene. Describe the scenario and the student's role.
-2. diagram — An INTERACTIVE STRUCTURED DIAGRAM showing the system. Use diagram_nodes and diagram_edges (NOT image_prompt). Each node needs id and text. Edges connect nodes with from/to IDs. diagram_type should be flowchart, system_map, process, cycle, hierarchy, or comparison.
-3. table — Show key data the student needs for decisions.
-4. choice_set — First decision with 3-4 options. Each has different tradeoffs affecting ALL variables.
-5. choice_set — Second decision building on the first. New tradeoffs.
-6. step_task — 1-2 calculation or analysis tasks related to the scenario.
-7. diagram — Another structured diagram showing relationships, processes, or system architecture. Use diagram_nodes and diagram_edges.
-8. choice_set — Final decision with highest stakes.
-9. insight — Key takeaway connecting decisions to real-world outcomes.
+=== REQUIRED BLOCK STRUCTURE (8-10 blocks) ===
+1. text — Set the scene. Student's role and scenario context.
+2. diagram — System architecture. Use diagram_nodes + diagram_edges (NOT images).
+3. control_panel — 2-4 INTERACTIVE SLIDERS the student adjusts. List variable names in "variables" array. This is the PRIMARY interaction point.
+4. output_display — Show 2-3 LIVE computed values from formulas. List formula keys in "outputs" array. These update as sliders move.
+5. table — Reference data for decision-making.
+6. choice_set — Strategic decision with 3-4 options. Each creates different tradeoffs.
+7. control_panel — Second round of adjustments after seeing effects.
+8. choice_set — Higher-stakes decision building on previous state.
+9. step_task — 1-2 analysis tasks using current variable values.
+10. insight — Key takeaway connecting to real-world applications.
 
-=== DIAGRAM BLOCKS (STRUCTURED, NOT IMAGES) ===
-- For type "diagram", you MUST provide:
-  - diagram_type: one of flowchart, system_map, process, cycle, hierarchy, comparison
-  - diagram_nodes: array of objects with "id" (string) and "text" (string label for the node)
-  - diagram_edges: array of objects with "from" (node id), "to" (node id), optional "label"
-  - diagram_caption: explains what the diagram shows
-- Example diagram block:
-  {
-    "type": "diagram",
-    "diagram_type": "flowchart",
-    "diagram_nodes": [
-      {"id": "input", "text": "Raw Materials"},
-      {"id": "process", "text": "Chemical Reaction"},
-      {"id": "output", "text": "Product"},
-      {"id": "waste", "text": "Byproducts"}
-    ],
-    "diagram_edges": [
-      {"from": "input", "to": "process", "label": "heated"},
-      {"from": "process", "to": "output"},
-      {"from": "process", "to": "waste", "label": "excess"}
-    ],
-    "diagram_caption": "Flow of materials through the reaction process"
-  }
-- Diagrams are rendered as interactive, draggable node-edge visualizations
-- Include at least 1-2 diagram blocks per lab
-- Do NOT use image_prompt for diagram blocks — use structured data only
+=== VARIABLE DESIGN (CRITICAL) ===
+- Create 4-6 DOMAIN-SPECIFIC variables (NEVER generic like "quality" or "efficiency")
+- Variables MUST interconnect via rules (changing one affects others)
+- Use realistic units and ranges from the actual domain
+- Example for Chemistry: temperature (°C, 20-500), pressure (atm, 1-50), catalyst_concentration (mol/L, 0-10)
+- Example for Economics: interest_rate (%, 0-20), inflation (%, 0-15), gdp_growth (%, -5 to 10)
 
-=== IMAGE BLOCKS (AI-GENERATED VISUALS) ===
-- Use type "image" only when you need a photorealistic or artistic illustration
-- image_prompt describes what to generate
-- image_caption explains what the student should notice
+=== RULES (3-5, MANDATORY) ===
+Rules fire automatically when conditions are met. They make the system FEEL ALIVE.
+Use mathjs syntax. Effects use relative changes ("+10", "-15") or formulas.
+Example: { "condition": "temperature > 400", "effects": { "stability": "-20", "yield": "+5" }, "message": "High temperature increases yield but destabilizes the reaction!" }
 
-=== RULES ===
-- Variables must be DOMAIN-SPECIFIC to ${topic}. Never generic names.
-- Create 3-5 variables that interact with each other.
-- Each choice must set ALL variables to new values. No choice improves everything.
-- Feedback must explain WHY this happens, not just whether it's right.
-- step_task prompts must be clear questions with definite answers.
-- Include hints and explanations for step_tasks.
-- The lab should take 5-10 minutes to complete.
+=== FORMULAS (2-4, MANDATORY) ===
+Derived values computed from variables. These update LIVE as sliders change.
+Example: { "efficiency": "yield / (energy_input * 0.1) * 100", "profit": "revenue - operating_costs - raw_material_costs" }
 
-=== STATE MACHINE RULES (IMPORTANT) ===
-Generate a "rules" array with 2-4 global rules that fire automatically based on variable conditions.
-These use mathjs syntax for conditions and create realistic system behavior.
+=== RANDOM EVENTS (1-3) ===
+Low-probability events that add variability. Probability between 0.05 and 0.2.
+Example: { "probability": 0.15, "effects": { "supply": "-20" }, "message": "Supply chain disruption! Raw materials delayed." }
 
-Examples:
-- { "condition": "temperature > 90", "effects": { "stability": "-20" }, "message": "Warning: High temperature is destabilizing the reaction!" }
-- { "condition": "budget < 15", "effects": { "morale": "-10" }, "message": "Budget crisis: Team morale drops as resources run out." }
-- { "condition": "population > 800", "effects": { "food_supply": "-15" }, "message": "Overpopulation strain: Food supply cannot keep up with demand." }
+=== GOAL (MANDATORY) ===
+Every lab MUST have a clear, measurable objective.
+Example: { "description": "Achieve >85% efficiency while keeping costs below $3000", "condition": "efficiency > 85 and total_cost < 3000" }
 
-Also generate a "formulas" object with 1-3 derived values calculated from variables using mathjs.
-Examples:
-- { "efficiency": "output / input * 100" }
-- { "profit_margin": "(revenue - costs) / revenue * 100" }
-- { "survival_rate": "food_supply * 0.8 + shelter * 0.2" }
+=== ANTI-PATTERNS (NEVER DO) ===
+- NO generic variable names (Topic Quality, Topic Efficiency)
+- NO "correct/incorrect" feedback — describe CONSEQUENCES
+- NO static content without interactivity
+- NO labs where sliders don't affect outputs
+- NO single obvious correct answer — every choice has tradeoffs`;
 
-Rules + formulas make the lab feel like a REAL SYSTEM that responds to student decisions.`;
-
-
-    const userPrompt = `Design a simulation lab for: "${moduleTitle}"
+    const userPrompt = `Design an interactive SIMULATION for: "${moduleTitle}"
 
 Topic: ${topic}
 Concept: ${labConcept}
 
-The student is placed in a real-world scenario where they must make decisions affecting ${topic}-related variables.
-Each decision creates tradeoffs. The lab must feel like running a real system, not answering test questions.
+REQUIREMENTS:
+1. The student must have at least 2 control_panel blocks with interactive sliders
+2. At least 1 output_display block showing live-computed derived values
+3. 4-6 domain-specific variables for ${topic} (NOT generic names)
+4. 3-5 rules that create cause→effect relationships between variables
+5. 2-4 formulas for derived outputs that update as sliders move
+6. A clear, measurable goal/objective
+7. 1-3 random events for variability
+8. Multiple paths — no single correct answer
 
-Return at least 6 blocks with a mix of types. Every choice_set must affect ALL variables differently.`;
+The student controls the system, sees it react, and discovers relationships.`;
 
     let blueprint: any = null;
     let lastGenError = "";
