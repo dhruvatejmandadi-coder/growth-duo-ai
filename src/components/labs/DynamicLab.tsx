@@ -693,32 +693,26 @@ export default function DynamicLab({ data, onComplete, isCompleted }: Props) {
               const outputKeys = outBlock.outputs || Object.keys(sim.derivedValues);
               return (
                 <div className="space-y-5">
-                  {outBlock.prompt && <p className="text-sm font-medium">{outBlock.prompt}</p>}
+                  {outBlock.prompt && <p className="text-base font-semibold text-foreground">{outBlock.prompt}</p>}
+                  <p className="text-xs text-muted-foreground">These values update in real time as you adjust the sliders above. Watch how your changes affect the system.</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {outputKeys.map((key: string) => {
                       const val = sim.derivedValues[key];
                       const varVal = values[key];
                       const displayVal = val !== undefined ? val : varVal;
                       if (displayVal === undefined) return null;
+                      const formula = data.formulas?.[key];
                       return (
-                        <div key={key} className="p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-1">
-                          <p className="text-xs text-muted-foreground capitalize font-medium">{key.replace(/_/g, " ")}</p>
+                        <div key={key} className="p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-1.5">
+                          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">{formatVarName(key)}</p>
                           <p className="text-2xl font-bold tabular-nums">{typeof displayVal === "number" ? displayVal.toFixed(1) : displayVal}</p>
+                          {formula && (
+                            <p className="text-[10px] text-muted-foreground/70 font-mono mt-1">= {formula}</p>
+                          )}
                         </div>
                       );
                     })}
                   </div>
-                  {/* Show formula definitions if available */}
-                  {data.formulas && (
-                    <div className="space-y-1 p-3 rounded-lg bg-muted/30 border border-border/40">
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Formulas</p>
-                      {Object.entries(data.formulas).filter(([k]) => outputKeys.includes(k)).map(([key, formula]) => (
-                        <p key={key} className="text-xs text-muted-foreground font-mono">
-                          {key} = {formula}
-                        </p>
-                      ))}
-                    </div>
-                  )}
                 </div>
               );
             })()}
