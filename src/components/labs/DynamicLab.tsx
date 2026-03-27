@@ -650,50 +650,24 @@ export default function DynamicLab({ data, onComplete, isCompleted }: Props) {
               const controlVars = (cpBlock.variables || [])
                 .map((name: string) => variables.find(v => v.name === name))
                 .filter(Boolean);
-              if (controlVars.length === 0) {
-                // Fallback: show all variables as sliders
-                return (
-                  <div className="space-y-5">
-                    {cpBlock.prompt && <p className="text-sm font-medium">{cpBlock.prompt}</p>}
-                    <div className="space-y-4">
-                      {variables.map((v: Variable) => {
-                        const value = values[v.name] ?? v.default;
-                        return (
-                          <div key={v.name} className="p-4 rounded-xl border border-border bg-card space-y-3">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium">{v.icon} {formatVarName(v.name)}</span>
-                              <span className="text-sm font-bold tabular-nums">{value} {v.unit}</span>
-                            </div>
-                            <Slider
-                              value={[value]}
-                              min={v.min}
-                              max={v.max}
-                              step={1}
-                              onValueChange={(val) => handleSliderChange(v.name, val[0])}
-                            />
-                            <div className="flex justify-between text-[10px] text-muted-foreground">
-                              <span>{v.min}</span>
-                              <span>{v.max}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              }
+              const displayVars = controlVars.length > 0 ? controlVars : variables;
               return (
                 <div className="space-y-5">
-                  {cpBlock.prompt && <p className="text-sm font-medium">{cpBlock.prompt}</p>}
+                  {cpBlock.prompt && <p className="text-base font-semibold text-foreground">{cpBlock.prompt}</p>}
                   <div className="space-y-4">
-                    {controlVars.map((v: Variable) => {
+                    {displayVars.map((v: Variable) => {
                       const value = values[v.name] ?? v.default;
                       return (
                         <div key={v.name} className="p-4 rounded-xl border border-border bg-card space-y-3">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">{v.icon} {formatVarName(v.name)}</span>
+                            <span className="text-sm font-semibold">{v.icon} {formatVarName(v.name)}</span>
                             <span className="text-sm font-bold tabular-nums">{value} {v.unit}</span>
                           </div>
+                          {v.description && (
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                              {v.description}
+                            </p>
+                          )}
                           <Slider
                             value={[value]}
                             min={v.min}
@@ -702,8 +676,8 @@ export default function DynamicLab({ data, onComplete, isCompleted }: Props) {
                             onValueChange={(val) => handleSliderChange(v.name, val[0])}
                           />
                           <div className="flex justify-between text-[10px] text-muted-foreground">
-                            <span>{v.min}</span>
-                            <span>{v.max}</span>
+                            <span>{v.min} {v.unit}</span>
+                            <span>{v.max} {v.unit}</span>
                           </div>
                         </div>
                       );
