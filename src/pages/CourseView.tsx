@@ -79,6 +79,7 @@ export default function CourseView() {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [generatingLabs, setGeneratingLabs] = useState<Set<string>>(new Set());
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
   useEffect(() => {
     if (id) fetchCourse();
