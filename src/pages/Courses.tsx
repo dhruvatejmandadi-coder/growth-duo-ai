@@ -49,6 +49,7 @@ export default function Courses() {
   useEffect(() => {
     if (user) {
       fetchCourses();
+      fetchDeletedCourses();
     } else {
       setLoading(false);
     }
