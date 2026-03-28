@@ -335,6 +335,7 @@ export default function CourseView() {
                   youtubeTitle={mod.youtube_title}
                   onComplete={handleLessonComplete}
                   isCompleted={getSectionDone(mod.id, "lesson")}
+                  onSlideChange={(idx) => setCurrentSlideIndex(idx)}
                 />
               )}
 
