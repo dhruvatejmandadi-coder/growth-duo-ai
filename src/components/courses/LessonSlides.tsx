@@ -84,7 +84,7 @@ export default function LessonSlides({ content, youtubeUrl, youtubeTitle, onComp
 
   const goPrev = useCallback(() => setCurrent((c) => Math.max(c - 1, 0)), []);
 
-  useEffect(() => { setVisitedSlides((prev) => new Set(prev).add(current)); }, [current]);
+  useEffect(() => { setVisitedSlides((prev) => new Set(prev).add(current)); onSlideChange?.(current); }, [current, onSlideChange]);
 
   useEffect(() => {
     if (visitedSlides.size >= total && !isCompleted && onComplete) onComplete();
