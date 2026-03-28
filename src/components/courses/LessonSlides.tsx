@@ -35,8 +35,12 @@ const SLIDE_TYPE_CONFIG: Record<string, { label: string; className: string }> = 
 };
 
 function detectChallenge(body: string): { isChallenge: boolean; questionText: string; answerHint: string | null } {
-  const challengePatterns = [/challenge/i, /calculate/i, /how many/i, /how much/i, /what is/i, /find the/i, /solve/i, /determine/i, /compute/i, /🧠.*challenge/i, /🧩/, /💡.*try/i];
-  const isChallenge = challengePatterns.some((p) => p.test(body));
+  // Only detect as challenge if there's an explicit challenge/question marker
+  const explicitMarkers = [/🧠.*challenge/i, /🧩.*challenge/i, /💡.*try/i, /\byour turn\b/i, /\btry it\b/i, /\bexercise\b/i];
+  // Also detect if the text ends with a question mark after a prompt-like sentence
+  const hasDirectQuestion = /(?:calculate|solve|find|determine|compute|how many|how much|what is|what are)\b.+\?\s*$/im.test(body);
+  const hasExplicitMarker = explicitMarkers.some((p) => p.test(body));
+  const isChallenge = hasExplicitMarker || hasDirectQuestion;
   const hintMatch = body.match(/hint:\s*(.+)/i) || body.match(/\(hint:\s*(.+?)\)/i);
   const answerHint = hintMatch ? hintMatch[1].trim() : null;
   return { isChallenge, questionText: body, answerHint };
