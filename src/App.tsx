@@ -26,6 +26,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import CourseCreator from "./pages/CourseCreator";
 import PublicCourses from "./pages/PublicCourses";
 import CourseEditor from "./pages/CourseEditor";
+import BusinessLabDemo from "./pages/BusinessLabDemo";
 
 const queryClient = new QueryClient();
 
