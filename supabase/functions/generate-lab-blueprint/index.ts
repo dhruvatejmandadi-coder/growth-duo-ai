@@ -280,6 +280,13 @@ serve(async (req) => {
     const topic = course.topic;
     const moduleTitle = mod.title;
     const labConcept = mod.lab_description || mod.title;
+    const lessonContent = mod.lesson_content || "";
+
+    // Extract key concepts from lesson for alignment
+    const lessonSummary = lessonContent
+      .replace(/\n---\n/g, "\n")
+      .replace(/#{1,3}\s/g, "")
+      .slice(0, 3000);
 
     const systemPrompt = `You are a SIMULATION SYSTEM DESIGNER for Repend. You convert ANY topic into an INTERACTIVE SYSTEM the student controls.
 
