@@ -377,7 +377,10 @@ Every lab MUST have a clear, measurable objective.
 Topic: ${topic}
 Concept: ${labConcept}
 
-REQUIREMENTS:
+=== LESSON CONTENT (use ONLY these concepts) ===
+${lessonSummary}
+
+REQUIREMENTS (lab must align with lesson above):
 1. The student must have at least 2 control_panel blocks with interactive sliders
 2. At least 1 output_display block showing live-computed derived values
 3. 4-6 domain-specific variables for ${topic} (NOT generic names)
