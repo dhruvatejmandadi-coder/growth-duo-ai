@@ -252,7 +252,7 @@ serve(async (req) => {
 
     const { data: mod, error: modError } = await supabase
       .from("course_modules")
-      .select("id, title, lab_description, lab_generation_status, course_id")
+      .select("id, title, lab_description, lab_generation_status, course_id, lesson_content")
       .eq("id", moduleId)
       .single();
 
