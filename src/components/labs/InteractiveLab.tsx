@@ -13,6 +13,7 @@ type Props = {
   onComplete?: () => void;
   isCompleted?: boolean;
   onRetryGeneration?: () => void;
+  onReplay?: () => void;
 };
 
 function LabEmptyState({ labType }: { labType?: string | null }) {
