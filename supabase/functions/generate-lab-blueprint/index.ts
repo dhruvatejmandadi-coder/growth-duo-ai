@@ -342,7 +342,7 @@ Classify the topic into a simulation type:
 10. insight — Key takeaway connecting to real-world applications.
 
 === LESSON ALIGNMENT (CRITICAL) ===
-The lab MUST reinforce concepts from the lesson. Use the same terminology, examples, and variables that students learned about. Do NOT introduce new concepts that weren't covered in the lesson.
+The lab MUST ONLY use concepts, terminology, and variables that were explicitly taught in the lesson content provided below. Do NOT introduce new concepts, jargon, or systems not covered in the lesson. Every variable and decision in the lab must directly map to something the student already learned.
 
 === VARIABLE DESIGN ===
 - Create 4-6 DOMAIN-SPECIFIC variables (NEVER generic like "quality" or "efficiency")
