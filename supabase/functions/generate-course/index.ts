@@ -368,7 +368,6 @@ ${hasFile ? "\nBase the outline on the uploaded source material." : ""}`;
       label: "outline-compact-retry",
       body: {
         max_completion_tokens: 4096,
-        reasoning: { effort: "none" },
         messages: [
           { role: "system", content: systemPrompt },
           {
