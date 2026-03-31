@@ -41,17 +41,20 @@ function extractToolArgs(aiData: any): any {
   const message = aiData.choices[0].message;
   const toolCall = message?.tool_calls?.[0];
   if (!toolCall) {
+    console.error("❌ No tool_calls in AI response. Full message:", JSON.stringify(message).slice(0, 500));
     throw new Error(`AI did not return structured data (reason: ${finishReason || "unknown"}).`);
   }
+  const raw = toolCall.function.arguments || "";
   try {
-    return JSON.parse(toolCall.function.arguments);
-  } catch {
-    let raw = toolCall.function.arguments || "";
-    raw = raw.replace(/,\s*$/, "");
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error("❌ JSON parse failed on tool_calls.arguments");
+    console.error("Raw AI response (first 500 chars):", raw.slice(0, 500));
+    const cleaned = raw.replace(/,\s*$/, "");
     for (const closer of ["]}]}", "]}}", "]}", "}", "]"]) {
-      try { return JSON.parse(raw + closer); } catch { /* next */ }
+      try { return JSON.parse(cleaned + closer); } catch { /* next */ }
     }
-    throw new Error("AI response was truncated.");
+    throw new Error("AI response was malformed or truncated.");
   }
 }
 
@@ -288,10 +291,9 @@ serve(async (req) => {
       .replace(/#{1,3}\s/g, "")
       .slice(0, 3000);
 
-    const systemPrompt = `You are a SIMULATION SYSTEM DESIGNER for Repend. You convert ANY topic into an INTERACTIVE SYSTEM the student controls.
+    const systemPrompt = `You are a SIMULATION SYSTEM DESIGNER. Return ONLY valid structured data. Be concise. No explanations outside the tool call.
 
-=== CORE PRINCIPLE ===
-You are NOT making quizzes or static content. You are building a CONTROLLABLE SYSTEM where:
+You convert topics into INTERACTIVE SYSTEMS with sliders, live outputs, and decisions.
 - Students adjust variables via sliders
 - The system reacts in REAL TIME (rules fire, derived outputs update)
 - Different inputs lead to different outcomes
@@ -417,7 +419,7 @@ Do NOT return empty blocks.`;
 
         const aiData = await callAI(LOVABLE_API_KEY, {
           model: "openai/gpt-5",
-          max_completion_tokens: 8192,
+          max_completion_tokens: 6000,
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: prompt },

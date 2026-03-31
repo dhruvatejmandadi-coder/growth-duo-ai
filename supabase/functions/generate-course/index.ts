@@ -61,17 +61,21 @@ function extractToolArgs(aiData: any): any {
   const message = aiData.choices[0].message;
   const toolCall = message?.tool_calls?.[0];
   if (!toolCall) {
+    console.error("❌ No tool_calls in AI response. Full message:", JSON.stringify(message).slice(0, 500));
     throw new Error(`AI did not return structured data (reason: ${aiData.choices[0]?.finish_reason || "unknown"}).`);
   }
+  const raw = toolCall.function.arguments || "";
   try {
-    return JSON.parse(toolCall.function.arguments);
-  } catch {
-    let raw = toolCall.function.arguments || "";
-    raw = raw.replace(/,\s*$/, "");
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error("❌ JSON parse failed on tool_calls.arguments");
+    console.error("Raw AI response (first 500 chars):", raw.slice(0, 500));
+    // Attempt repair for truncated JSON
+    const cleaned = raw.replace(/,\s*$/, "");
     for (const closer of ["]}]}", "]}}", "]}", "}", "]"]) {
-      try { return JSON.parse(raw + closer); } catch { /* next */ }
+      try { return JSON.parse(cleaned + closer); } catch { /* next */ }
     }
-    throw new Error("AI response was truncated. Try a simpler topic.");
+    throw new Error("AI response was malformed or truncated. Try a simpler topic.");
   }
 }
 
@@ -224,14 +228,12 @@ async function generateModuleContent(apiKey: string, topic: string, moduleTitle:
   console.log(`[Step 2] Generating lesson+quiz for module ${moduleIndex + 1}/${totalModules}: "${moduleTitle}"`);
   const personalization = buildPersonalizationContext(preferences);
 
-  const systemPrompt = `You are an expert lesson writer. Generate ONE lesson and ONE quiz for a specific module.
+  const systemPrompt = `Expert lesson writer. Return ONLY valid structured data. Be concise.
 
-=== LESSON FORMAT ===
-7 slides separated by "---". Each slide: emoji title, short bullets, tables for comparisons.
-Slide sequence: 🎯 Objective, 🧠 Core Concept, 📊 Visual/Example, 🌎 Real-World, 🧪 Lab Preview, 📋 Challenge, ✅ Takeaways
+LESSON: 7 slides separated by "---". Each slide: emoji title + short bullets. Keep each slide under 150 words.
+Slides: 🎯 Objective, 🧠 Core Concept, 📊 Example, 🌎 Real-World, 🧪 Lab Preview, 📋 Challenge, ✅ Takeaways
 
-=== QUIZ ===
-8-10 questions. Mix conceptual + applied. Each has explanation referencing the lesson.
+QUIZ: 5 questions. Mix conceptual + applied. Short explanations.
 ${personalization ? `\n${personalization}` : ""}
 ${hasFile ? "\nBase content on the source material provided." : ""}`;
 
@@ -240,7 +242,7 @@ ${hasFile ? "\nBase content on the source material provided." : ""}`;
     : `Module ${moduleIndex + 1}/${totalModules} of course "${topic}": "${moduleTitle}"`;
 
   const aiData = await callAIWithFallback(apiKey, {
-    max_completion_tokens: 4096,
+    max_completion_tokens: 3000,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userMsg },
