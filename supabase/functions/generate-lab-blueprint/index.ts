@@ -41,17 +41,20 @@ function extractToolArgs(aiData: any): any {
   const message = aiData.choices[0].message;
   const toolCall = message?.tool_calls?.[0];
   if (!toolCall) {
+    console.error("❌ No tool_calls in AI response. Full message:", JSON.stringify(message).slice(0, 500));
     throw new Error(`AI did not return structured data (reason: ${finishReason || "unknown"}).`);
   }
+  const raw = toolCall.function.arguments || "";
   try {
-    return JSON.parse(toolCall.function.arguments);
-  } catch {
-    let raw = toolCall.function.arguments || "";
-    raw = raw.replace(/,\s*$/, "");
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error("❌ JSON parse failed on tool_calls.arguments");
+    console.error("Raw AI response (first 500 chars):", raw.slice(0, 500));
+    const cleaned = raw.replace(/,\s*$/, "");
     for (const closer of ["]}]}", "]}}", "]}", "}", "]"]) {
-      try { return JSON.parse(raw + closer); } catch { /* next */ }
+      try { return JSON.parse(cleaned + closer); } catch { /* next */ }
     }
-    throw new Error("AI response was truncated.");
+    throw new Error("AI response was malformed or truncated.");
   }
 }
 
