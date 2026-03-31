@@ -228,14 +228,12 @@ async function generateModuleContent(apiKey: string, topic: string, moduleTitle:
   console.log(`[Step 2] Generating lesson+quiz for module ${moduleIndex + 1}/${totalModules}: "${moduleTitle}"`);
   const personalization = buildPersonalizationContext(preferences);
 
-  const systemPrompt = `You are an expert lesson writer. Generate ONE lesson and ONE quiz for a specific module.
+  const systemPrompt = `Expert lesson writer. Return ONLY valid structured data. Be concise.
 
-=== LESSON FORMAT ===
-7 slides separated by "---". Each slide: emoji title, short bullets, tables for comparisons.
-Slide sequence: 🎯 Objective, 🧠 Core Concept, 📊 Visual/Example, 🌎 Real-World, 🧪 Lab Preview, 📋 Challenge, ✅ Takeaways
+LESSON: 7 slides separated by "---". Each slide: emoji title + short bullets. Keep each slide under 150 words.
+Slides: 🎯 Objective, 🧠 Core Concept, 📊 Example, 🌎 Real-World, 🧪 Lab Preview, 📋 Challenge, ✅ Takeaways
 
-=== QUIZ ===
-8-10 questions. Mix conceptual + applied. Each has explanation referencing the lesson.
+QUIZ: 5 questions. Mix conceptual + applied. Short explanations.
 ${personalization ? `\n${personalization}` : ""}
 ${hasFile ? "\nBase content on the source material provided." : ""}`;
 
