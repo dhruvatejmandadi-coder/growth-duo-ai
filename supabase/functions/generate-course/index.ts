@@ -419,7 +419,6 @@ ${hasFile ? "\nBase content on the source material provided." : ""}`;
       label: `module-${moduleIndex + 1}-primary`,
       body: {
         max_completion_tokens: 6000,
-        reasoning: { effort: "none" },
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: fullContextUserMsg },
