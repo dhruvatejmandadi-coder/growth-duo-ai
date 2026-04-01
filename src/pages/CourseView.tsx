@@ -85,6 +85,39 @@ export default function CourseView() {
     if (id) fetchCourse();
   }, [id]);
 
+  // Poll for modules still generating content
+  useEffect(() => {
+    const hasGenerating = modules.some(m => m.lesson_content.startsWith("⏳"));
+    if (!hasGenerating || !id) return;
+
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from("course_modules")
+        .select("*")
+        .eq("course_id", id)
+        .order("module_order");
+      if (data) {
+        const parsed = data.map((m: any) => ({ ...m, quiz: Array.isArray(m.quiz) ? m.quiz : [] }));
+        setModules(parsed);
+
+        // Check if all done
+        const stillGenerating = parsed.some((m: any) => m.lesson_content.startsWith("⏳"));
+        if (!stillGenerating) {
+          // Update course status to ready
+          await supabase.from("courses").update({ status: "ready" }).eq("id", id);
+          // Trigger lab generation for all modules
+          for (const m of parsed) {
+            if (m.lab_generation_status === "pending" || m.lab_generation_status === "generating") {
+              triggerLabGeneration(m.id);
+            }
+          }
+        }
+      }
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, [modules, id]);
+
   const fetchCourse = async () => {
     const [courseRes, modulesRes] = await Promise.all([
       supabase.from("courses").select("*").eq("id", id!).maybeSingle(),
@@ -100,9 +133,9 @@ export default function CourseView() {
     setModules(parsed);
     setLoading(false);
 
-    // Trigger lab generation for any pending/generating modules
+    // Trigger lab generation for any pending/generating modules (only for ready ones)
     for (const m of parsed) {
-      if (m.lab_generation_status === "pending" || m.lab_generation_status === "generating") {
+      if (!m.lesson_content.startsWith("⏳") && (m.lab_generation_status === "pending" || m.lab_generation_status === "generating")) {
         triggerLabGeneration(m.id);
       }
     }
