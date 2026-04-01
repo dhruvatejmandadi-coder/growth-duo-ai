@@ -514,62 +514,69 @@ serve(async (req) => {
       })
       .eq("id", course.id);
 
-    for (let i = 0; i < modules.length; i++) {
-      const mod = modules[i];
-      let moduleRow: any;
+    // Generate modules in parallel pairs for speed
+    const BATCH_SIZE = 2;
+    for (let batchStart = 0; batchStart < modules.length; batchStart += BATCH_SIZE) {
+      const batch = modules.slice(batchStart, batchStart + BATCH_SIZE);
+      const batchPromises = batch.map(async (mod: any, batchIdx: number) => {
+        const i = batchStart + batchIdx;
+        let moduleRow: any;
 
-      try {
-        const content = await generateModuleContent(
-          LOVABLE_API_KEY,
-          topic,
-          mod.title,
-          i,
-          modules.length,
-          hasFile,
-          fileTextContext,
-          preferences
-        );
+        try {
+          const content = await generateModuleContent(
+            LOVABLE_API_KEY,
+            topic,
+            mod.title,
+            i,
+            modules.length,
+            hasFile,
+            fileTextContext,
+            preferences
+          );
 
-        moduleRow = {
-          course_id: course.id,
-          module_order: i + 1,
-          title: mod.title,
-          lesson_content: content.lesson_content,
-          youtube_url: `https://www.youtube.com/results?search_query=${encodeURIComponent(mod.youtube_query || mod.title)}`,
-          youtube_title: mod.youtube_title || mod.title,
-          lab_type: "dynamic",
-          lab_title: mod.lab_title || mod.title,
-          lab_description: mod.lab_concept || null,
-          lab_data: null,
-          lab_generation_status: "pending",
-          lab_blueprint: null,
-          lab_error: null,
-          quiz: content.quiz,
-        };
+          moduleRow = {
+            course_id: course.id,
+            module_order: i + 1,
+            title: mod.title,
+            lesson_content: content.lesson_content,
+            youtube_url: `https://www.youtube.com/results?search_query=${encodeURIComponent(mod.youtube_query || mod.title)}`,
+            youtube_title: mod.youtube_title || mod.title,
+            lab_type: "dynamic",
+            lab_title: mod.lab_title || mod.title,
+            lab_description: mod.lab_concept || null,
+            lab_data: null,
+            lab_generation_status: "pending",
+            lab_blueprint: null,
+            lab_error: null,
+            quiz: content.quiz,
+          };
 
-        console.log(`[Step 2] Module ${i + 1}/${modules.length} "${mod.title}" done`);
-      } catch (e: any) {
-        console.error(`[Step 2] Module ${i + 1} failed: ${e.message}`);
-        moduleRow = {
-          course_id: course.id,
-          module_order: i + 1,
-          title: mod.title,
-          lesson_content: `## ${mod.title}\n\nContent generation failed. Please regenerate this module.`,
-          youtube_url: `https://www.youtube.com/results?search_query=${encodeURIComponent(mod.title)}`,
-          youtube_title: mod.title,
-          lab_type: "dynamic",
-          lab_title: mod.lab_title || mod.title,
-          lab_description: mod.lab_concept || null,
-          lab_data: null,
-          lab_generation_status: "pending",
-          lab_blueprint: null,
-          lab_error: null,
-          quiz: [{ question: `What is a key concept from "${mod.title}"?`, options: ["A", "B", "C", "D"], correct: 0, explanation: "Review the lesson." }],
-        };
-      }
+          console.log(`[Step 2] Module ${i + 1}/${modules.length} "${mod.title}" done`);
+        } catch (e: any) {
+          console.error(`[Step 2] Module ${i + 1} failed: ${e.message}`);
+          moduleRow = {
+            course_id: course.id,
+            module_order: i + 1,
+            title: mod.title,
+            lesson_content: `## ${mod.title}\n\nContent generation failed. Please regenerate this module.`,
+            youtube_url: `https://www.youtube.com/results?search_query=${encodeURIComponent(mod.title)}`,
+            youtube_title: mod.title,
+            lab_type: "dynamic",
+            lab_title: mod.lab_title || mod.title,
+            lab_description: mod.lab_concept || null,
+            lab_data: null,
+            lab_generation_status: "pending",
+            lab_blueprint: null,
+            lab_error: null,
+            quiz: [{ question: `What is a key concept from "${mod.title}"?`, options: ["A", "B", "C", "D"], correct: 0, explanation: "Review the lesson." }],
+          };
+        }
 
-      // Insert each module immediately so it's saved even if the function times out
-      await supabase.from("course_modules").insert(moduleRow);
+        // Insert each module immediately
+        await supabase.from("course_modules").insert(moduleRow);
+      });
+
+      await Promise.all(batchPromises);
     }
 
     console.log(`[Done] Inserted ${modules.length} modules`);
