@@ -7,7 +7,8 @@ const corsHeaders = {
 };
 
 const PRIMARY_MODEL = "openai/gpt-5";
-const FALLBACK_MODEL = "google/gemini-2.5-pro";
+const FAST_MODEL = "openai/gpt-5-mini";
+const FALLBACK_MODEL = "google/gemini-2.5-flash";
 
 const outlineToolSchema = {
   type: "function" as const,
@@ -140,7 +141,8 @@ function isRetriableStructuredOutputError(error: unknown): boolean {
 
 async function callStructuredAIWithFallback(
   apiKey: string,
-  attempts: Array<{ label: string; body: any }>
+  attempts: Array<{ label: string; body: any }>,
+  preferredModel: string = PRIMARY_MODEL
 ): Promise<any> {
   let lastError: Error | null = null;
 
@@ -148,7 +150,7 @@ async function callStructuredAIWithFallback(
     const attempt = attempts[i];
 
     try {
-      const aiData = await callAI(apiKey, { ...attempt.body, model: PRIMARY_MODEL });
+      const aiData = await callAI(apiKey, { ...attempt.body, model: preferredModel });
       return extractToolArgs(aiData);
     } catch (error) {
       if (error instanceof Error && error.message.includes("credits")) throw error;
@@ -395,13 +397,15 @@ async function generateModuleContent(
   console.log(`[Step 2] Generating lesson+quiz for module ${moduleIndex + 1}/${totalModules}: "${moduleTitle}"`);
   const personalization = buildPersonalizationContext(preferences);
 
-  const systemPrompt = `Expert lesson writer.
+  const systemPrompt = `Expert lesson writer for high school and college students.
 Return ONLY valid structured data via the tool call.
-Be concise.
+Be concise but ENGAGING — students struggle with staying engaged and seeing real-world relevance.
 LESSON: 7 slides separated by "---".
 Each slide needs an emoji heading and 3-5 short bullets.
+Include at least ONE real-world application example per lesson.
+Use relatable analogies and scenarios students can connect to.
 Keep each slide under 120 words.
-QUIZ: exactly 5 questions.
+QUIZ: exactly 5 questions with practical application focus.
 Keep explanations to 1 sentence.
 ${personalization ? `\n${personalization}` : ""}
 ${hasFile ? "\nBase content on the source material provided." : ""}`;
@@ -439,7 +443,7 @@ ${hasFile ? "\nBase content on the source material provided." : ""}`;
         tool_choice: { type: "function", function: { name: "create_module_content" } },
       },
     },
-  ]);
+  ], FAST_MODEL);
 
   return {
     lesson_content: repairLessonContent(result.lesson_content || ""),
@@ -512,62 +516,69 @@ serve(async (req) => {
       })
       .eq("id", course.id);
 
-    for (let i = 0; i < modules.length; i++) {
-      const mod = modules[i];
-      let moduleRow: any;
+    // Generate modules in parallel pairs for speed
+    const BATCH_SIZE = 2;
+    for (let batchStart = 0; batchStart < modules.length; batchStart += BATCH_SIZE) {
+      const batch = modules.slice(batchStart, batchStart + BATCH_SIZE);
+      const batchPromises = batch.map(async (mod: any, batchIdx: number) => {
+        const i = batchStart + batchIdx;
+        let moduleRow: any;
 
-      try {
-        const content = await generateModuleContent(
-          LOVABLE_API_KEY,
-          topic,
-          mod.title,
-          i,
-          modules.length,
-          hasFile,
-          fileTextContext,
-          preferences
-        );
+        try {
+          const content = await generateModuleContent(
+            LOVABLE_API_KEY,
+            topic,
+            mod.title,
+            i,
+            modules.length,
+            hasFile,
+            fileTextContext,
+            preferences
+          );
 
-        moduleRow = {
-          course_id: course.id,
-          module_order: i + 1,
-          title: mod.title,
-          lesson_content: content.lesson_content,
-          youtube_url: `https://www.youtube.com/results?search_query=${encodeURIComponent(mod.youtube_query || mod.title)}`,
-          youtube_title: mod.youtube_title || mod.title,
-          lab_type: "dynamic",
-          lab_title: mod.lab_title || mod.title,
-          lab_description: mod.lab_concept || null,
-          lab_data: null,
-          lab_generation_status: "pending",
-          lab_blueprint: null,
-          lab_error: null,
-          quiz: content.quiz,
-        };
+          moduleRow = {
+            course_id: course.id,
+            module_order: i + 1,
+            title: mod.title,
+            lesson_content: content.lesson_content,
+            youtube_url: `https://www.youtube.com/results?search_query=${encodeURIComponent(mod.youtube_query || mod.title)}`,
+            youtube_title: mod.youtube_title || mod.title,
+            lab_type: "dynamic",
+            lab_title: mod.lab_title || mod.title,
+            lab_description: mod.lab_concept || null,
+            lab_data: null,
+            lab_generation_status: "pending",
+            lab_blueprint: null,
+            lab_error: null,
+            quiz: content.quiz,
+          };
 
-        console.log(`[Step 2] Module ${i + 1}/${modules.length} "${mod.title}" done`);
-      } catch (e: any) {
-        console.error(`[Step 2] Module ${i + 1} failed: ${e.message}`);
-        moduleRow = {
-          course_id: course.id,
-          module_order: i + 1,
-          title: mod.title,
-          lesson_content: `## ${mod.title}\n\nContent generation failed. Please regenerate this module.`,
-          youtube_url: `https://www.youtube.com/results?search_query=${encodeURIComponent(mod.title)}`,
-          youtube_title: mod.title,
-          lab_type: "dynamic",
-          lab_title: mod.lab_title || mod.title,
-          lab_description: mod.lab_concept || null,
-          lab_data: null,
-          lab_generation_status: "pending",
-          lab_blueprint: null,
-          lab_error: null,
-          quiz: [{ question: `What is a key concept from "${mod.title}"?`, options: ["A", "B", "C", "D"], correct: 0, explanation: "Review the lesson." }],
-        };
-      }
+          console.log(`[Step 2] Module ${i + 1}/${modules.length} "${mod.title}" done`);
+        } catch (e: any) {
+          console.error(`[Step 2] Module ${i + 1} failed: ${e.message}`);
+          moduleRow = {
+            course_id: course.id,
+            module_order: i + 1,
+            title: mod.title,
+            lesson_content: `## ${mod.title}\n\nContent generation failed. Please regenerate this module.`,
+            youtube_url: `https://www.youtube.com/results?search_query=${encodeURIComponent(mod.title)}`,
+            youtube_title: mod.title,
+            lab_type: "dynamic",
+            lab_title: mod.lab_title || mod.title,
+            lab_description: mod.lab_concept || null,
+            lab_data: null,
+            lab_generation_status: "pending",
+            lab_blueprint: null,
+            lab_error: null,
+            quiz: [{ question: `What is a key concept from "${mod.title}"?`, options: ["A", "B", "C", "D"], correct: 0, explanation: "Review the lesson." }],
+          };
+        }
 
-      // Insert each module immediately so it's saved even if the function times out
-      await supabase.from("course_modules").insert(moduleRow);
+        // Insert each module immediately
+        await supabase.from("course_modules").insert(moduleRow);
+      });
+
+      await Promise.all(batchPromises);
     }
 
     console.log(`[Done] Inserted ${modules.length} modules`);
