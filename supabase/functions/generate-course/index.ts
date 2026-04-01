@@ -397,13 +397,15 @@ async function generateModuleContent(
   console.log(`[Step 2] Generating lesson+quiz for module ${moduleIndex + 1}/${totalModules}: "${moduleTitle}"`);
   const personalization = buildPersonalizationContext(preferences);
 
-  const systemPrompt = `Expert lesson writer.
+  const systemPrompt = `Expert lesson writer for high school and college students.
 Return ONLY valid structured data via the tool call.
-Be concise.
+Be concise but ENGAGING — students struggle with staying engaged and seeing real-world relevance.
 LESSON: 7 slides separated by "---".
 Each slide needs an emoji heading and 3-5 short bullets.
+Include at least ONE real-world application example per lesson.
+Use relatable analogies and scenarios students can connect to.
 Keep each slide under 120 words.
-QUIZ: exactly 5 questions.
+QUIZ: exactly 5 questions with practical application focus.
 Keep explanations to 1 sentence.
 ${personalization ? `\n${personalization}` : ""}
 ${hasFile ? "\nBase content on the source material provided." : ""}`;
