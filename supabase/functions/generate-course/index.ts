@@ -6,9 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const PRIMARY_MODEL = "openai/gpt-5";
-const FAST_MODEL = "openai/gpt-5-mini";
-const FALLBACK_MODEL = "google/gemini-2.5-flash";
+const PRIMARY_MODEL = "gpt-4o";
+const FAST_MODEL = "gpt-4o-mini";
+const FALLBACK_MODEL = "gpt-4o-mini";
 
 const outlineToolSchema = {
   type: "function" as const,
