@@ -582,7 +582,7 @@ serve(async (req) => {
       .select()
       .single();
 
-    const outline = await generateOutline(LOVABLE_API_KEY, topic, hasFile, preferences);
+    const outline = await generateOutline(OPENAI_API_KEY, topic, hasFile, preferences);
     const modules = Array.isArray(outline.modules) ? outline.modules.slice(0, 4) : [];
 
     if (modules.length === 0) {

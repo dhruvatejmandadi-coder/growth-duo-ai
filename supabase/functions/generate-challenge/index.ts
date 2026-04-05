@@ -337,7 +337,7 @@ IMPORTANT: Generate a COMPLETE, PLAYABLE interactive lab with all required field
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/gpt-5",
+        model: "gpt-4o",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },

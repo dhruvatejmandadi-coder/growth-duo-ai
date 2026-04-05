@@ -552,8 +552,8 @@ REQUIREMENTS:
         await new Promise(r => setTimeout(r, genAttempt * 2000));
       }
       try {
-        const aiData = await callAI(LOVABLE_API_KEY, {
-          model: "openai/gpt-5",
+        const aiData = await callAI(OPENAI_API_KEY, {
+          model: "gpt-4o",
           max_completion_tokens: 6000,
           messages: [
             { role: "system", content: systemPrompt },
