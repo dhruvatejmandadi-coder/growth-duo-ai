@@ -258,8 +258,8 @@ const graphToolSchema = {
         title: { type: "string" },
         goal: { type: "string" },
         graph_type: { type: "string", enum: ["linear", "quadratic", "exponential", "trig", "custom"] },
-        equation: { type: "string", description: "Math expression using variable names from sliders + x. E.g. 'a * (x - h)^2 + k' or 'm * x + b'" },
-        display_equation: { type: "string", description: "Human-readable equation form. E.g. 'f(x) = a(x - h)² + k'" },
+        equation: { type: "string", description: "Math expression using variable names from sliders + x. E.g. 'A * (x - H)^2 + K' or 'M * x + B'" },
+        display_equation: { type: "string", description: "Human-readable equation form. E.g. 'f(x) = A(x - H)² + K'" },
         sliders: {
           type: "array",
           items: {
