@@ -422,7 +422,7 @@ ${hasFile ? "\nBase content on the source material provided." : ""}`;
     {
       label: `module-${moduleIndex + 1}-primary`,
       body: {
-        max_tokens: 6000,
+        max_completion_tokens: 6000,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: fullContextUserMsg },
