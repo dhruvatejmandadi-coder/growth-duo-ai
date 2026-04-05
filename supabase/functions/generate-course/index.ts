@@ -496,7 +496,7 @@ serve(async (req) => {
 
       try {
         const content = await generateModuleContent(
-          LOVABLE_API_KEY,
+          OPENAI_API_KEY,
           topic || moduleTitle,
           moduleTitle,
           moduleIndex,
