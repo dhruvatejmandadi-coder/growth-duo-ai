@@ -2,6 +2,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw, AlertTriangle } from "lucide-react";
 import DynamicLab from "./DynamicLab";
+import FlowchartLab from "./FlowchartLab";
+import CodeDebuggerLab from "./CodeDebuggerLab";
+import GraphLab from "./GraphLab";
 
 type Props = {
   labType?: string | null;
