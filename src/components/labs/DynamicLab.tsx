@@ -644,7 +644,7 @@ export default function DynamicLab({ data, onComplete, isCompleted, onReplay }: 
               const pct = ((value - v.min) / (v.max - v.min)) * 100;
               return (
                 <div className="space-y-5">
-                  {sliderBlock.prompt && <p className="text-sm font-medium">{sliderBlock.prompt}</p>}
+                  {sliderBlock.prompt && <p className="text-sm font-medium">{interpolateVars(sliderBlock.prompt, values)}</p>}
                   <div className="p-5 rounded-xl border border-border bg-card space-y-4">
                     <div className="text-center">
                       <span className="text-3xl font-bold tabular-nums">{value}</span>
