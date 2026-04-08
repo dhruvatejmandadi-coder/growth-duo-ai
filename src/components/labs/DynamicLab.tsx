@@ -594,7 +594,7 @@ export default function DynamicLab({ data, onComplete, isCompleted, onReplay }: 
               return (
                 <div className="space-y-5">
                   <div>
-                    <p className="text-base font-semibold">{choiceBlock.emoji || "🔬"} {choiceBlock.question}</p>
+                    <p className="text-base font-semibold">{choiceBlock.emoji || "🔬"} {interpolateVars(choiceBlock.question, values)}</p>
                   </div>
                   <div className="space-y-2.5">
                     {choiceBlock.choices.map((c: Choice, i: number) => {
