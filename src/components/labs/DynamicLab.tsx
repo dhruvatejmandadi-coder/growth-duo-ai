@@ -244,8 +244,7 @@ export default function DynamicLab({ data, onComplete, isCompleted, onReplay }: 
     setShowIntro(true);
     setCurrentStep(0);
     setShowHint({});
-    setGeneratedImages({});
-    setImageLoading({});
+    
     setEventLog([]);
     onReplay?.();
   };
