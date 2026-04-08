@@ -249,23 +249,7 @@ export default function DynamicLab({ data, onComplete, isCompleted, onReplay }: 
     onReplay?.();
   };
 
-  const generateImage = useCallback(async (blockIdx: number, prompt: string) => {
-    if (generatedImages[blockIdx] || imageLoading[blockIdx]) return;
-    setImageLoading(prev => ({ ...prev, [blockIdx]: true }));
-    try {
-      const { data: fnData, error: fnError } = await supabase.functions.invoke("generate-lab-image", {
-        body: { prompt, context: data.title || "" },
-      });
-      if (fnError) throw fnError;
-      if (fnData?.imageUrl) {
-        setGeneratedImages(prev => ({ ...prev, [blockIdx]: fnData.imageUrl }));
-      }
-    } catch (e) {
-      console.error("Image generation failed:", e);
-    } finally {
-      setImageLoading(prev => ({ ...prev, [blockIdx]: false }));
-    }
-  }, [generatedImages, imageLoading, data.title]);
+  
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
