@@ -127,8 +127,7 @@ export default function DynamicLab({ data, onComplete, isCompleted, onReplay }: 
   const [taskSubmitted, setTaskSubmitted] = useState<Record<string, boolean>>({});
   const [completionFired, setCompletionFired] = useState(false);
   const [showHint, setShowHint] = useState<Record<string, boolean>>({});
-  const [generatedImages, setGeneratedImages] = useState<Record<number, string>>({});
-  const [imageLoading, setImageLoading] = useState<Record<number, boolean>>({});
+  
   const [eventLog, setEventLog] = useState<string[]>([]);
 
   const totalSteps = blocks.length;
