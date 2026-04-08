@@ -799,7 +799,7 @@ export default function DynamicLab({ data, onComplete, isCompleted, onReplay }: 
                               {showHint[task.id] ? "Hide hint" : "Show hint"}
                             </button>
                             {showHint[task.id] && (
-                              <p className="text-xs text-muted-foreground mt-1.5 pl-4 border-l-2 border-primary/20 animate-fade-in">{task.hint}</p>
+                              <p className="text-xs text-muted-foreground mt-1.5 pl-4 border-l-2 border-primary/20 animate-fade-in">{interpolateVars(task.hint, values)}</p>
                             )}
                           </div>
                         )}
