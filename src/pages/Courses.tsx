@@ -36,6 +36,8 @@ export default function Courses() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [deletedCourses, setDeletedCourses] = useState<(Course & { deleted_at?: string })[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatingCourseId, setGeneratingCourseId] = useState<string | null>(null);
+  const [generatingTopic, setGeneratingTopic] = useState("");
   const [loading, setLoading] = useState(true);
   const [showSignUpPrompt, setShowSignUpPrompt] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
