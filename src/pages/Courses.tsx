@@ -499,7 +499,12 @@ export default function Courses() {
       />
 
       {/* Course generation loading screen */}
-      <CourseGeneratingScreen topic={topic || firstFileName || ""} isVisible={isGenerating && !!user} />
+      <CourseGeneratingScreen
+        topic={generatingTopic || topic || firstFileName || ""}
+        isVisible={isGenerating && !!user}
+        courseId={generatingCourseId}
+        onComplete={handleGenerationComplete}
+      />
 
       <GeneratingSignUpPrompt open={showSignUpPrompt} onOpenChange={handleSignUpPromptClose} topic={topic} />
     </>
