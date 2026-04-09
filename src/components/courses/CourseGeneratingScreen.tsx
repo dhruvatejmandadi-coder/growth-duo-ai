@@ -228,7 +228,7 @@ export function CourseGeneratingScreen({ topic, isVisible, courseId, onComplete 
           <div className="text-xs text-muted-foreground/60 space-y-1">
             {moduleStatuses.map(m => (
               <div key={m.id} className="flex items-center gap-2">
-                {m.hasLesson && m.hasQuiz && (m.labStatus === "ready" || m.labStatus === "failed") ? (
+                {m.hasLesson && m.hasQuiz && (m.labStatus === "ready" || m.labStatus === "done" || m.labStatus === "failed") ? (
                   <CheckCircle2 className="w-3 h-3 text-green-400" />
                 ) : (
                   <Loader2 className="w-3 h-3 animate-spin text-primary/50" />
