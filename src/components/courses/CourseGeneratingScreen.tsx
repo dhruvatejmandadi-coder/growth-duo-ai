@@ -45,7 +45,7 @@ export function CourseGeneratingScreen({ topic, isVisible, courseId, onComplete 
     const total = modules.length;
     const lessonsReady = modules.filter(m => m.hasLesson).length;
     const quizzesReady = modules.filter(m => m.hasQuiz).length;
-    const labsReady = modules.filter(m => m.labStatus === "ready").length;
+    const labsReady = modules.filter(m => m.labStatus === "ready" || m.labStatus === "done").length;
     const labsGenerating = modules.filter(m => m.labStatus === "generating").length;
 
     // Outline done = 10%
@@ -70,7 +70,7 @@ export function CourseGeneratingScreen({ topic, isVisible, courseId, onComplete 
       text = `Creating quiz questions...`;
     } else if (labsReady < total) {
       phase = "labs";
-      const generating = modules.find(m => m.labStatus !== "ready");
+      const generating = modules.find(m => m.labStatus !== "ready" && m.labStatus !== "done" && m.labStatus !== "failed");
       text = labsGenerating > 0
         ? `Building lab: ${generating?.title || "Module"}...`
         : `Waiting for lab generation...`;
@@ -117,7 +117,7 @@ export function CourseGeneratingScreen({ topic, isVisible, courseId, onComplete 
         // Check if everything is done
         const allDone = statuses.length > 0 &&
           statuses.every(m => m.hasLesson && m.hasQuiz) &&
-          statuses.every(m => m.labStatus === "ready" || m.labStatus === "failed");
+          statuses.every(m => m.labStatus === "ready" || m.labStatus === "done" || m.labStatus === "failed");
 
         if (allDone) {
           setProgress(100);
@@ -228,7 +228,7 @@ export function CourseGeneratingScreen({ topic, isVisible, courseId, onComplete 
           <div className="text-xs text-muted-foreground/60 space-y-1">
             {moduleStatuses.map(m => (
               <div key={m.id} className="flex items-center gap-2">
-                {m.hasLesson && m.hasQuiz && (m.labStatus === "ready" || m.labStatus === "failed") ? (
+                {m.hasLesson && m.hasQuiz && (m.labStatus === "ready" || m.labStatus === "done" || m.labStatus === "failed") ? (
                   <CheckCircle2 className="w-3 h-3 text-green-400" />
                 ) : (
                   <Loader2 className="w-3 h-3 animate-spin text-primary/50" />
