@@ -117,7 +117,7 @@ export function CourseGeneratingScreen({ topic, isVisible, courseId, onComplete 
         // Check if everything is done
         const allDone = statuses.length > 0 &&
           statuses.every(m => m.hasLesson && m.hasQuiz) &&
-          statuses.every(m => m.labStatus === "ready" || m.labStatus === "failed");
+          statuses.every(m => m.labStatus === "ready" || m.labStatus === "done" || m.labStatus === "failed");
 
         if (allDone) {
           setProgress(100);
