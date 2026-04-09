@@ -45,7 +45,7 @@ export function CourseGeneratingScreen({ topic, isVisible, courseId, onComplete 
     const total = modules.length;
     const lessonsReady = modules.filter(m => m.hasLesson).length;
     const quizzesReady = modules.filter(m => m.hasQuiz).length;
-    const labsReady = modules.filter(m => m.labStatus === "ready").length;
+    const labsReady = modules.filter(m => m.labStatus === "ready" || m.labStatus === "done").length;
     const labsGenerating = modules.filter(m => m.labStatus === "generating").length;
 
     // Outline done = 10%
