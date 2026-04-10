@@ -31,8 +31,17 @@ const PHASE_CONFIG: Record<GenerationPhase, { icon: any; label: string; baseWeig
 
 const PHASE_ORDER: GenerationPhase[] = ["outline", "lessons", "quizzes", "labs", "finalizing", "complete"];
 
+// Psychology-based easing: progress bar starts fast, slows at end
+function psychProgress(raw: number): number {
+  // Apply ease-out cubic: fast at start, slow near completion
+  const t = raw / 100;
+  const eased = 1 - Math.pow(1 - t, 3);
+  return Math.round(eased * 100);
+}
+
 export function CourseGeneratingScreen({ topic, isVisible, courseId, onComplete }: CourseGeneratingScreenProps) {
-  const [progress, setProgress] = useState(0);
+  const [rawProgress, setRawProgress] = useState(0);
+  const [displayProgress, setDisplayProgress] = useState(0);
   const [currentPhase, setCurrentPhase] = useState<GenerationPhase>("outline");
   const [statusText, setStatusText] = useState("Analyzing your topic...");
   const [moduleStatuses, setModuleStatuses] = useState<ModuleStatus[]>([]);
@@ -110,7 +119,7 @@ export function CourseGeneratingScreen({ topic, isVisible, courseId, onComplete 
         setModuleStatuses(statuses);
 
         const { pct, phase, text } = computeProgress(statuses);
-        setProgress(pct);
+        setRawProgress(pct);
         setCurrentPhase(phase);
         setStatusText(text);
 
@@ -120,7 +129,7 @@ export function CourseGeneratingScreen({ topic, isVisible, courseId, onComplete 
           statuses.every(m => m.labStatus === "ready" || m.labStatus === "done" || m.labStatus === "failed");
 
         if (allDone) {
-          setProgress(100);
+          setRawProgress(100);
           setCurrentPhase("complete");
           setStatusText("Course ready!");
           setTimeout(() => {
@@ -144,6 +153,24 @@ export function CourseGeneratingScreen({ topic, isVisible, courseId, onComplete 
       clearTimeout(initial);
     };
   }, [isVisible, courseId, computeProgress, onComplete]);
+
+  // Smoothly animate displayed progress with psychology easing
+  useEffect(() => {
+    const target = rawProgress === 100 ? 100 : psychProgress(rawProgress);
+    if (displayProgress === target) return;
+    const step = target > displayProgress ? 1 : -1;
+    const timer = setInterval(() => {
+      setDisplayProgress(prev => {
+        const next = prev + step;
+        if ((step > 0 && next >= target) || (step < 0 && next <= target)) {
+          clearInterval(timer);
+          return target;
+        }
+        return next;
+      });
+    }, 20);
+    return () => clearInterval(timer);
+  }, [rawProgress, displayProgress]);
 
   if (!isVisible) return null;
 
@@ -174,12 +201,12 @@ export function CourseGeneratingScreen({ topic, isVisible, courseId, onComplete 
           </p>
         </div>
 
-        {/* Progress bar */}
+        {/* Progress bar - psychological easing */}
         <div className="space-y-2">
-          <Progress value={progress} className="h-3" />
+          <Progress value={displayProgress} className="h-3" />
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="font-medium transition-all duration-300">{statusText}</span>
-            <span className="tabular-nums font-semibold text-foreground">{progress}%</span>
+            <span className="tabular-nums font-semibold text-foreground">{displayProgress}%</span>
           </div>
         </div>
 
