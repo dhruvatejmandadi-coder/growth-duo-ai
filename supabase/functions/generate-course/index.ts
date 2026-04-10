@@ -213,16 +213,47 @@ function repairLessonContent(content: string): string {
   if (!content) return "## Lesson\n\nContent is being prepared.";
 
   let repaired = content;
+
+  // Step 1: If no --- separators at all, try splitting on ## headings
   if (!repaired.includes("\n---\n")) {
     const sections = repaired.split(/(?=^## )/m).filter(Boolean);
-    if (sections.length > 1) repaired = sections.join("\n\n---\n\n");
+    if (sections.length > 1) {
+      repaired = sections.join("\n\n---\n\n");
+    } else {
+      // Step 2: If still no sections, split on emoji headings (🧠, 🔍, 💾, etc.)
+      const emojiSections = repaired.split(/(?=^(?:\p{Emoji_Presentation}|\p{Extended_Pictographic}).*\n)/mu).filter(s => s.trim());
+      if (emojiSections.length > 1) {
+        repaired = emojiSections.map(s => s.trim()).join("\n\n---\n\n");
+      } else {
+        // Step 3: If still one big block, split by double newlines into ~120-word chunks
+        const paragraphs = repaired.split(/\n{2,}/).filter(s => s.trim());
+        if (paragraphs.length > 3) {
+          const slides: string[] = [];
+          let current: string[] = [];
+          let wordCount = 0;
+          for (const p of paragraphs) {
+            const pWords = p.split(/\s+/).length;
+            if (wordCount + pWords > 120 && current.length > 0) {
+              slides.push(current.join("\n\n"));
+              current = [p];
+              wordCount = pWords;
+            } else {
+              current.push(p);
+              wordCount += pWords;
+            }
+          }
+          if (current.length) slides.push(current.join("\n\n"));
+          if (slides.length > 1) repaired = slides.join("\n\n---\n\n");
+        }
+      }
+    }
   }
 
+  // Cap at 8 slides max by merging smallest adjacent pairs
   const slides = repaired.split(/\n---\n/).map((s: string) => s.trim()).filter(Boolean);
   while (slides.length > 8) {
     let minLen = Infinity;
     let minIdx = 0;
-
     for (let i = 0; i < slides.length - 1; i++) {
       const combined = slides[i].length + slides[i + 1].length;
       if (combined < minLen) {
@@ -230,9 +261,23 @@ function repairLessonContent(content: string): string {
         minIdx = i;
       }
     }
-
-    slides[minIdx] = slides[minIdx] + "\n" + slides[minIdx + 1];
+    slides[minIdx] = slides[minIdx] + "\n\n" + slides[minIdx + 1];
     slides.splice(minIdx + 1, 1);
+  }
+
+  // Ensure minimum 3 slides — if less, force-split the longest slide
+  while (slides.length < 3 && slides.some(s => s.split(/\s+/).length > 60)) {
+    let maxLen = 0;
+    let maxIdx = 0;
+    for (let i = 0; i < slides.length; i++) {
+      const wc = slides[i].split(/\s+/).length;
+      if (wc > maxLen) { maxLen = wc; maxIdx = i; }
+    }
+    const lines = slides[maxIdx].split("\n");
+    const mid = Math.floor(lines.length / 2);
+    const first = lines.slice(0, mid).join("\n");
+    const second = lines.slice(mid).join("\n");
+    slides.splice(maxIdx, 1, first, second);
   }
 
   return slides.join("\n\n---\n\n");
@@ -400,11 +445,25 @@ async function generateModuleContent(
   const systemPrompt = `Expert lesson writer for high school and college students.
 Return ONLY valid structured data via the tool call.
 Be concise but ENGAGING — students struggle with staying engaged and seeing real-world relevance.
-LESSON: 7 slides separated by "---".
-Each slide needs an emoji heading and 3-5 short bullets.
+
+CRITICAL LESSON FORMAT RULES:
+- Create EXACTLY 7 slides.
+- Each slide MUST be separated by a line containing ONLY "---" (three dashes on its own line).
+- Each slide MUST start with an emoji heading (e.g., "## 🧠 Concept Name").
+- Each slide gets 3-5 short bullets.
+- Keep each slide under 120 words.
+- Example format:
+## 🧠 Introduction
+- Point one
+- Point two
+---
+## 📊 Key Concepts
+- Point one
+- Point two
+---
+
 Include at least ONE real-world application example per lesson.
 Use relatable analogies and scenarios students can connect to.
-Keep each slide under 120 words.
 QUIZ: exactly 5 questions with practical application focus.
 Keep explanations to 1 sentence.
 ${personalization ? `\n${personalization}` : ""}
