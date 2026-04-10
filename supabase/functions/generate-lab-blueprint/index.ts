@@ -548,10 +548,22 @@ serve(async (req) => {
 
     if (!course) throw new Error("Course not found");
 
+    // Skip only if already done AND has actual lab data
     if (mod.lab_generation_status === "done") {
-      return new Response(JSON.stringify({ status: "already_done" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      // Check if lab_data actually exists
+      const { data: fullMod } = await supabase
+        .from("course_modules")
+        .select("lab_data")
+        .eq("id", moduleId)
+        .single();
+      
+      if (fullMod?.lab_data && typeof fullMod.lab_data === "object" && Object.keys(fullMod.lab_data).length > 0) {
+        return new Response(JSON.stringify({ status: "already_done" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // Otherwise, regenerate — lab was marked done but has no data
+      console.log(`[Lab Gen] Module "${moduleId}" was marked done but has no lab_data — regenerating`);
     }
 
     await supabase.from("course_modules").update({ lab_generation_status: "generating" }).eq("id", moduleId);
