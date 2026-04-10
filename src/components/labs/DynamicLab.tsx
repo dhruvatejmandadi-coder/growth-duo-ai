@@ -151,6 +151,7 @@ export default function DynamicLab({ data, onComplete, isCompleted, onReplay }: 
   const [taskSubmitted, setTaskSubmitted] = useState<Record<string, boolean>>({});
   const [completionFired, setCompletionFired] = useState(false);
   const [showHint, setShowHint] = useState<Record<string, boolean>>({});
+  const [animatingVars, setAnimatingVars] = useState<Set<string>>(new Set());
   
   const [eventLog, setEventLog] = useState<string[]>([]);
 
@@ -216,6 +217,43 @@ export default function DynamicLab({ data, onComplete, isCompleted, onReplay }: 
     }
   }, [allDone, currentStep, totalSteps, completionFired, onComplete]);
 
+  /** Animate values smoothly over ~600ms */
+  const animateValues = useCallback((targetValues: Record<string, number>) => {
+    const varNames = Object.keys(targetValues);
+    setAnimatingVars(new Set(varNames));
+    
+    setValues(prev => {
+      const startValues = { ...prev };
+      const duration = 600;
+      const startTime = performance.now();
+      
+      const tick = () => {
+        const elapsed = performance.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // Ease-out cubic for satisfying deceleration
+        const eased = 1 - Math.pow(1 - progress, 3);
+        
+        const interpolated: Record<string, number> = { ...startValues };
+        for (const name of varNames) {
+          const start = startValues[name] ?? 50;
+          const end = targetValues[name];
+          interpolated[name] = Math.round(start + (end - start) * eased);
+        }
+        
+        setValues(interpolated);
+        
+        if (progress < 1) {
+          requestAnimationFrame(tick);
+        } else {
+          setAnimatingVars(new Set());
+        }
+      };
+      
+      requestAnimationFrame(tick);
+      return startValues; // Return original; animation will update via RAF
+    });
+  }, []);
+
   const handleChoice = useCallback((blockIdx: number, choiceIdx: number) => {
     if (choiceAnswers[blockIdx] !== undefined) return;
     const block = blocks[blockIdx] as any;
@@ -226,18 +264,19 @@ export default function DynamicLab({ data, onComplete, isCompleted, onReplay }: 
       const choiceSetIndex = blocks.slice(0, blockIdx + 1).filter(b => b.type === "choice_set").length - 1;
       sim.sendEvent(`CHOOSE_${choiceSetIndex}_${choiceIdx}`);
     } else if (choice.effects && typeof choice.effects === "object") {
-      setValues(prev => {
-        const next = { ...prev };
-        for (const v of variables) {
-          if (typeof choice.effects[v.name] === "number") {
-            next[v.name] = Math.max(v.min, Math.min(v.max, choice.effects[v.name]));
-          }
+      // Compute target values
+      const targets: Record<string, number> = {};
+      for (const v of variables) {
+        if (typeof choice.effects[v.name] === "number") {
+          targets[v.name] = Math.max(v.min, Math.min(v.max, choice.effects[v.name]));
         }
-        return next;
-      });
+      }
+      if (Object.keys(targets).length > 0) {
+        animateValues(targets);
+      }
     }
     setChoiceAnswers(prev => ({ ...prev, [blockIdx]: choiceIdx }));
-  }, [choiceAnswers, blocks, variables, sim]);
+  }, [choiceAnswers, blocks, variables, sim, animateValues]);
 
   /** Handle slider change — triggers live rule evaluation */
   const handleSliderChange = useCallback((varName: string, newValue: number) => {
